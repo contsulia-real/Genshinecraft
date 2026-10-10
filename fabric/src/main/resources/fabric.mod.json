@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "license": "${mod_license}",
+  "authors": [
+    "Contsulia"
+  ],
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.genshinecraft.fabric.GenshinecraftFabric"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "architectury": ">=${architectury_version}",
+    "minecraft": "${minecraft_version}"
+  }
+}
