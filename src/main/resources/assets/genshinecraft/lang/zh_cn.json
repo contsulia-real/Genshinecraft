@@ -13,5 +13,6 @@
   "element.genshinecraft.dendro": "草",
   "element.genshinecraft.hydro": "水",
   "element.genshinecraft.pyro": "火",
-  "element.genshinecraft.cryo": "冰"
+  "element.genshinecraft.cryo": "冰",
+  "itemGroup.genshinecraft": "Genshinecraft 载体"
 }

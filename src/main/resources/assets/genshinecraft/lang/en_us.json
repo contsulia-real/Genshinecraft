@@ -13,5 +13,6 @@
   "element.genshinecraft.dendro": "Dendro",
   "element.genshinecraft.hydro": "Hydro",
   "element.genshinecraft.pyro": "Pyro",
-  "element.genshinecraft.cryo": "Cryo"
+  "element.genshinecraft.cryo": "Cryo",
+  "itemGroup.genshinecraft": "Genshinecraft Carriers"
 }
