@@ -1,0 +1,17 @@
+{
+  "item.genshinecraft.vision": "神之眼",
+  "item.genshinecraft.moon_wheel": "月之轮",
+  "item.genshinecraft.star_wedge": "星之楔",
+  "key.genshinecraft.switch_carrier": "切换当前元素载体",
+  "key.categories.genshinecraft": "Genshinecraft",
+  "key.category.genshinecraft.carrier": "Genshinecraft",
+  "hud.genshinecraft.header": "元素载体 %s/%s（%s 切换）",
+  "hud.genshinecraft.pending": "能量与技能冷却：尚未接入",
+  "element.genshinecraft.anemo": "风",
+  "element.genshinecraft.geo": "岩",
+  "element.genshinecraft.electro": "雷",
+  "element.genshinecraft.dendro": "草",
+  "element.genshinecraft.hydro": "水",
+  "element.genshinecraft.pyro": "火",
+  "element.genshinecraft.cryo": "冰"
+}

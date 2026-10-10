@@ -1,0 +1,17 @@
+{
+  "item.genshinecraft.vision": "Vision",
+  "item.genshinecraft.moon_wheel": "Lunar Ring",
+  "item.genshinecraft.star_wedge": "Stellar Wedge",
+  "key.genshinecraft.switch_carrier": "Switch Active Elemental Carrier",
+  "key.categories.genshinecraft": "Genshinecraft",
+  "key.category.genshinecraft.carrier": "Genshinecraft",
+  "hud.genshinecraft.header": "Elemental Carriers %s/%s (Switch: %s)",
+  "hud.genshinecraft.pending": "Energy and skill cooldowns: not implemented",
+  "element.genshinecraft.anemo": "Anemo",
+  "element.genshinecraft.geo": "Geo",
+  "element.genshinecraft.electro": "Electro",
+  "element.genshinecraft.dendro": "Dendro",
+  "element.genshinecraft.hydro": "Hydro",
+  "element.genshinecraft.pyro": "Pyro",
+  "element.genshinecraft.cryo": "Cryo"
+}

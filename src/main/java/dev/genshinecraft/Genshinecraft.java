@@ -1,6 +1,9 @@
 package dev.genshinecraft;
 
 import dev.architectury.event.events.common.TickEvent;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
+import dev.genshinecraft.client.GenshinecraftClient;
 import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.CarrierItems;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +16,7 @@ public final class Genshinecraft {
 
     public static void init() {
         CarrierItems.init();
+        EnvExecutor.runInEnv(Env.CLIENT, () -> GenshinecraftClient::init);
         TickEvent.PLAYER_POST.register(player -> {
             if (!(player instanceof ServerPlayer)) {
                 return;
