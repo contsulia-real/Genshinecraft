@@ -7,28 +7,39 @@ import dev.genshinecraft.Genshinecraft;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 //? if >=26.3 {
 /*import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 *///?}
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 public final class CarrierItems {
     private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Genshinecraft.MOD_ID, Registries.ITEM);
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Genshinecraft.MOD_ID, Registries.CREATIVE_MODE_TAB);
 
+    // Legacy registry IDs are retained so old worlds can still load their items.
     public static final RegistrySupplier<Item> VISION = register("vision");
     public static final RegistrySupplier<Item> MOON_WHEEL = register("moon_wheel");
     public static final RegistrySupplier<Item> STAR_WEDGE = register("star_wedge");
+
+    public static final Map<CarrierData.Element, RegistrySupplier<Item>> VISIONS = registerElements("vision");
+    public static final Map<CarrierData.Element, RegistrySupplier<Item>> MOON_WHEELS = registerElements("moon_wheel");
+    public static final Map<CarrierData.Element, RegistrySupplier<Item>> STAR_WEDGES = registerElements("star_wedge");
+
     public static final RegistrySupplier<CreativeModeTab> CARRIER_TAB = TABS.register("carriers", () ->
             CreativeTabRegistry.create(builder -> builder
                     .title(Component.translatable("itemGroup.genshinecraft"))
-                    .icon(() -> new ItemStack(VISION.get()))
+                    .icon(() -> new ItemStack(VISIONS.get(CarrierData.Element.ANEMO).get()))
                     .displayItems((parameters, output) -> {
-                        output.accept(VISION.get());
-                        output.accept(MOON_WHEEL.get());
-                        output.accept(STAR_WEDGE.get());
+                        for (CarrierData.Element element : CarrierData.Element.values()) {
+                            output.accept(VISIONS.get(element).get());
+                            output.accept(MOON_WHEELS.get(element).get());
+                            output.accept(STAR_WEDGES.get(element).get());
+                        }
                     }))
     );
 
@@ -36,13 +47,24 @@ public final class CarrierItems {
     }
 
     private static RegistrySupplier<Item> register(String name) {
-        return ITEMS.register(name, () -> {
-            Item.Properties properties = new Item.Properties().stacksTo(1).fireResistant();
-            //? if >=26.3 {
-            /*properties.setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, name)));
-            *///?}
-            return new Item(properties);
-        });
+        return ITEMS.register(name, () -> new Item(properties(name)));
+    }
+
+    private static Map<CarrierData.Element, RegistrySupplier<Item>> registerElements(String kind) {
+        Map<CarrierData.Element, RegistrySupplier<Item>> result = new EnumMap<>(CarrierData.Element.class);
+        for (CarrierData.Element element : CarrierData.Element.values()) {
+            String name = kind + "_" + element.name().toLowerCase(java.util.Locale.ROOT);
+            result.put(element, ITEMS.register(name, () -> new ElementCarrierItem(properties(name), element)));
+        }
+        return result;
+    }
+
+    private static Item.Properties properties(String name) {
+        Item.Properties properties = new Item.Properties().stacksTo(1).fireResistant();
+        //? if >=26.3 {
+        /*properties.setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, name)));
+        *///?}
+        return properties;
     }
 
     public static boolean isCarrier(ItemStack stack) {
@@ -50,11 +72,25 @@ public final class CarrierItems {
     }
 
     public static boolean isCarrier(Item item) {
-        return item == VISION.get() || item == MOON_WHEEL.get() || item == STAR_WEDGE.get();
+        return item instanceof ElementCarrierItem || item == VISION.get()
+                || item == MOON_WHEEL.get() || item == STAR_WEDGE.get();
+    }
+
+    public static CarrierData.Element fixedElement(Item item) {
+        return item instanceof ElementCarrierItem carrier ? carrier.element : null;
     }
 
     public static void init() {
         ITEMS.register();
         TABS.register();
+    }
+
+    private static final class ElementCarrierItem extends Item {
+        private final CarrierData.Element element;
+
+        private ElementCarrierItem(Properties properties, CarrierData.Element element) {
+            super(properties);
+            this.element = element;
+        }
     }
 }

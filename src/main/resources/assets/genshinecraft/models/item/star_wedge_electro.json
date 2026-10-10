@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "genshinecraft:item/star_wedge_snezhnaya/star_wedge_electro"
+  }
+}

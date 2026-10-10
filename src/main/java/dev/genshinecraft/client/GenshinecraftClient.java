@@ -82,16 +82,17 @@ public final class GenshinecraftClient {
             }
 
             List<CarrierEntry> carriers = availableCarriers(client);
-            if (carriers.isEmpty()) {
-                return;
-            }
             int index = currentIndex(carriers);
-            String title = Component.translatable("hud.genshinecraft.header",
-                    index + 1, carriers.size(), SWITCH_CARRIER.getTranslatedKeyMessage().getString()).getString();
-            String status = Component.translatable("hud.genshinecraft.pending").getString();
+            String title = carriers.isEmpty()
+                    ? Component.translatable("hud.genshinecraft.empty").getString()
+                    : Component.translatable("hud.genshinecraft.header",
+                            index + 1, carriers.size(), SWITCH_CARRIER.getTranslatedKeyMessage().getString()).getString();
+            String status = carriers.isEmpty()
+                    ? Component.translatable("hud.genshinecraft.no_carrier").getString()
+                    : Component.translatable("hud.genshinecraft.pending").getString();
 
             int rows = Math.min(carriers.size(), Math.min(7, Math.max(1, (graphics.guiHeight() - 60) / 12)));
-            int start = Math.max(0, Math.min(index - rows / 2, carriers.size() - rows));
+            int start = carriers.isEmpty() ? 0 : Math.max(0, Math.min(index - rows / 2, carriers.size() - rows));
             List<String> lines = new ArrayList<>();
             for (int i = start; i < start + rows; i++) {
                 CarrierEntry entry = carriers.get(i);

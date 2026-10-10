@@ -35,7 +35,8 @@ public record CarrierData(
                                    int skillLevel, int burstLevel, int elementalMastery, String statue) {
         if (!CarrierItems.isCarrier(item) || element == null || skill == null || skill.isBlank()
                 || burst == null || burst.isBlank() || statue == null || statue.isBlank()
-                || skillLevel < 0 || burstLevel < 0 || elementalMastery < 0) {
+                || skillLevel < 0 || burstLevel < 0 || elementalMastery < 0
+                || (CarrierItems.fixedElement(item) != null && CarrierItems.fixedElement(item) != element)) {
             throw new IllegalArgumentException("Invalid carrier data");
         }
         ItemStack stack = new ItemStack(item);
@@ -63,7 +64,7 @@ public record CarrierData(
         }
         try {
             String owner = string(tag, OWNER);
-            return new CarrierData(
+            CarrierData parsed = new CarrierData(
                     UUID.fromString(string(tag, ID)),
                     Element.valueOf(string(tag, ELEMENT)),
                     string(tag, SKILL), string(tag, BURST),
@@ -72,6 +73,8 @@ public record CarrierData(
                     owner.isEmpty() ? null : UUID.fromString(owner),
                     bool(tag, ABANDONED)
             );
+            Element fixed = CarrierItems.fixedElement(stack.getItem());
+            return fixed == null || fixed == parsed.element ? parsed : null;
         } catch (IllegalArgumentException exception) {
             return null;
         }
@@ -82,8 +85,24 @@ public record CarrierData(
             return false;
         }
         CompoundTag tag = readTag(stack);
-        if (tag.contains(OWNER) || bool(tag, ABANDONED) || read(stack) == null) {
+        if (tag.contains(OWNER) || bool(tag, ABANDONED)) {
             return false;
+        }
+        if (read(stack) == null) {
+            // Only new element-specific items receive initial data automatically.
+            // Unassigned skills/energy stay unavailable until the skill system exists.
+            Element fixed = CarrierItems.fixedElement(stack.getItem());
+            if (tag.contains(ID) || fixed == null) {
+                return false;
+            }
+            tag.putString(ID, UUID.randomUUID().toString());
+            tag.putString(ELEMENT, fixed.name());
+            tag.putString(SKILL, "");
+            tag.putString(BURST, "");
+            tag.putInt(SKILL_LEVEL, 0);
+            tag.putInt(BURST_LEVEL, 0);
+            tag.putInt(MASTERY, 0);
+            tag.putString(STATUE, "");
         }
         tag.putString(OWNER, playerId.toString());
         saveTag(stack, tag);
