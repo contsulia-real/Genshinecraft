@@ -4,6 +4,7 @@ import dev.genshinecraft.combat.ElementalCombat;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 //? if >=26.3 {
 /*import net.minecraft.world.entity.projectile.arrow.ThrownTrident;
@@ -34,9 +35,15 @@ public abstract class TridentHitMixin {
     //?}
     private boolean genshinecraft$hit(Entity target, DamageSource source, float amount) {
         //? if >=26.3 {
-        /*boolean hurt = target.hurtOrSimulate(source, amount);
+        /*Projectile shot = (Projectile) (Object) this;
+        float adjusted = shot.getOwner() instanceof Player player
+                ? ElementalCombat.reactionDamage(player, target, source, amount, "normal_projectile") : amount;
+        boolean hurt = target.hurtOrSimulate(source, adjusted);
         *///?} else {
-        boolean hurt = target.hurt(source, amount);
+        Projectile shot = (Projectile) (Object) this;
+        float adjusted = shot.getOwner() instanceof Player player
+                ? ElementalCombat.reactionDamage(player, target, source, amount, "normal_projectile") : amount;
+        boolean hurt = target.hurt(source, adjusted);
         //?}
         if (hurt) {
             ElementalCombat.onProjectileHit((Projectile) (Object) this, target, source);

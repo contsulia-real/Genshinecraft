@@ -42,7 +42,8 @@ public abstract class PlayerAttackMixin {
             at = @At(value = "INVOKE", target =
                     "Lnet/minecraft/world/entity/Entity;hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z"))
     private boolean genshinecraft$hitParticles(Entity target, DamageSource source, float amount) {
-        boolean damaged = target.hurt(source, amount);
+        boolean damaged = target.hurt(source,
+                ElementalCombat.reactionDamage((Player) (Object) this, target, source, amount, "normal_melee"));
         if (damaged) {
             ElementalCombat.onMeleeHit((Player) (Object) this, target, source);
         }
@@ -53,7 +54,8 @@ public abstract class PlayerAttackMixin {
             at = @At(value = "INVOKE", target =
                     "Lnet/minecraft/world/entity/Entity;hurtOrSimulate(Lnet/minecraft/world/damagesource/DamageSource;F)Z"))
     private boolean genshinecraft$hitParticles(Entity target, DamageSource source, float amount) {
-        boolean damaged = target.hurtOrSimulate(source, amount);
+        boolean damaged = target.hurtOrSimulate(source,
+                ElementalCombat.reactionDamage((Player) (Object) this, target, source, amount, "normal_melee"));
         if (damaged) {
             ElementalCombat.onMeleeHit((Player) (Object) this, target, source);
         }

@@ -5,6 +5,8 @@ import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.WeaponBinding;
 import dev.genshinecraft.particle.ElementalParticles;
 import dev.genshinecraft.element.ElementalAuraHolder;
+import dev.genshinecraft.element.ElementalReactionEffects;
+import dev.genshinecraft.element.ElementalReactionEngine;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 //? if >=26.3 {
@@ -104,17 +106,45 @@ public final class ElementalCombat {
         return new DamageSource(holder, projectile, player);
     }
 
+    /** Modify the original attack amount before Minecraft applies armor and resistance. */
+    public static float reactionDamage(Player player, Entity target, DamageSource source,
+                                       float amount, String attackGroup) {
+        if (!(player.level() instanceof ServerLevel) || !(target instanceof LivingEntity living)
+                || amount <= 0) {
+            return amount;
+        }
+        CarrierData.Element incoming = sourceElement(source);
+        if (incoming == null) {
+            return amount;
+        }
+        var state = ((ElementalAuraHolder) living).genshinecraft$auras();
+        if (!state.canApply(player.getUUID(), incoming, attackGroup, living.tickCount)) {
+            return amount;
+        }
+        return amount * ElementalReactionEngine.preview(state, incoming).damageMultiplier();
+    }
+
+    private static CarrierData.Element sourceElement(DamageSource source) {
+        for (CarrierData.Element element : CarrierData.Element.values()) {
+            if (source.is(ATTACK_TYPES.get(element))) {
+                return element;
+            }
+        }
+        return null;
+    }
+
     public static void onMeleeHit(Player player, Entity target, DamageSource source) {
-        spawnHitParticles(player, target, source);
+        spawnHitParticles(player, target, source, "normal_melee");
     }
 
     public static void onProjectileHit(Projectile projectile, Entity target, DamageSource source) {
         if (projectile.getOwner() instanceof Player player) {
-            spawnHitParticles(player, target, source);
+            spawnHitParticles(player, target, source, "normal_projectile");
         }
     }
 
-    private static void spawnHitParticles(Player player, Entity target, DamageSource source) {
+    private static void spawnHitParticles(Player player, Entity target, DamageSource source,
+                                          String attackGroup) {
         if (!(player.level() instanceof ServerLevel server)) {
             return;
         }
@@ -123,7 +153,7 @@ public final class ElementalCombat {
                 continue;
             }
             if (target instanceof LivingEntity living && living.isAlive()) {
-                ((ElementalAuraHolder) living).genshinecraft$auras().apply(element, player.getUUID());
+                ElementalReactionEffects.onHit(server, player, living, element, attackGroup);
             }
             // Keep the near-side placement, but restore the original subtle burst.
             double dx = player.getX() - target.getX();
