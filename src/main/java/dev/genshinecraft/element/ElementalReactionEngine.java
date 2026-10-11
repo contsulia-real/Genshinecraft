@@ -2,14 +2,12 @@ package dev.genshinecraft.element;
 
 import dev.genshinecraft.item.CarrierData.Element;
 
-/**
- * Gauge-driven reaction selection. Reading a plan has no side effects: it is
- * safe before vanilla damage calculation and committed only after a real hit.
- */
+/** Pure, directional gauge reaction selection; call only after ICD permits a hit. */
 public final class ElementalReactionEngine {
     public enum Reaction {
         NONE, VAPORIZE, MELT, OVERLOADED, SUPERCONDUCT, ELECTRO_CHARGED,
-        FROZEN, SWIRL, CRYSTALLIZE
+        FROZEN, SWIRL, CRYSTALLIZE, BURNING, BLOOM, QUICKEN, AGGRAVATE, SPREAD,
+        BURGEON, HYPERBLOOM
     }
 
     public record Plan(Reaction reaction, Element existing, Element incoming,
@@ -23,6 +21,13 @@ public final class ElementalReactionEngine {
     }
 
     public static Plan preview(ElementalAuraState state, Element incoming) {
+        // The independent quicken state is not consumed by an Aggravate/Spread hit.
+        if (state.isQuickened() && incoming == Element.ELECTRO) {
+            return new Plan(Reaction.AGGRAVATE, Element.DENDRO, incoming, 0f, 1f);
+        }
+        if (state.isQuickened() && incoming == Element.DENDRO) {
+            return new Plan(Reaction.SPREAD, Element.ELECTRO, incoming, 0f, 1f);
+        }
         for (Element existing : Element.values()) {
             if (existing == incoming || !state.has(existing)) {
                 continue;
@@ -35,19 +40,14 @@ public final class ElementalReactionEngine {
         return Plan.none(incoming);
     }
 
-    /**
-     * The order matters: existing is the target's aura; incoming is the hit.
-     * Gauge costs are in units of the incoming 1U application.
-     */
+    /** Existing is target's aura, incoming is the hit. Costs are in 1U equivalents. */
     public static Plan pair(Element existing, Element incoming) {
-        if ((existing == Element.HYDRO && incoming == Element.PYRO)
-                || (existing == Element.PYRO && incoming == Element.HYDRO)) {
+        if (pairIs(existing, incoming, Element.HYDRO, Element.PYRO)) {
             boolean strong = incoming == Element.HYDRO;
             return new Plan(Reaction.VAPORIZE, existing, incoming,
                     strong ? 2f : 0.5f, strong ? 2f : 1.5f);
         }
-        if ((existing == Element.CRYO && incoming == Element.PYRO)
-                || (existing == Element.PYRO && incoming == Element.CRYO)) {
+        if (pairIs(existing, incoming, Element.CRYO, Element.PYRO)) {
             boolean strong = incoming == Element.PYRO;
             return new Plan(Reaction.MELT, existing, incoming,
                     strong ? 2f : 0.5f, strong ? 2f : 1.5f);
@@ -63,6 +63,15 @@ public final class ElementalReactionEngine {
         }
         if (pairIs(existing, incoming, Element.HYDRO, Element.CRYO)) {
             return new Plan(Reaction.FROZEN, existing, incoming, 1f, 1f);
+        }
+        if (pairIs(existing, incoming, Element.DENDRO, Element.PYRO)) {
+            return new Plan(Reaction.BURNING, existing, incoming, 0.5f, 1f);
+        }
+        if (pairIs(existing, incoming, Element.DENDRO, Element.HYDRO)) {
+            return new Plan(Reaction.BLOOM, existing, incoming, 0.5f, 1f);
+        }
+        if (pairIs(existing, incoming, Element.DENDRO, Element.ELECTRO)) {
+            return new Plan(Reaction.QUICKEN, existing, incoming, 0.5f, 1f);
         }
         if (incoming == Element.ANEMO && dispersible(existing)) {
             return new Plan(Reaction.SWIRL, existing, incoming, 0.5f, 1f);

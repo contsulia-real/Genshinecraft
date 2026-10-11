@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "genshinecraft:reaction_anemo",
+    "genshinecraft:reaction_geo",
+    "genshinecraft:reaction_electro",
+    "genshinecraft:reaction_dendro",
+    "genshinecraft:reaction_hydro",
+    "genshinecraft:reaction_pyro",
+    "genshinecraft:reaction_cryo"
+  ]
+}

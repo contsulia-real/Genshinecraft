@@ -21,6 +21,7 @@ import java.util.UUID;
 @Mixin(LivingEntity.class)
 public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
     @Unique private static final String GENSHINCRAFT_AURAS = "genshinecraft.auras";
+    @Unique private static final String GENSHINCRAFT_REACTIONS = "genshinecraft.reactions";
     @Unique private final ElementalAuraState genshinecraft$auraState = new ElementalAuraState();
 
     @Override
@@ -36,9 +37,14 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
     //? if >=26.3 {
     /*@Inject(method = "addAdditionalSaveData", at = @At("TAIL"))
     private void genshinecraft$saveAuras(ValueOutput output, CallbackInfo ci) {
-        if (genshinecraft$auraState.snapshot().isEmpty()) {
-            return;
+        // Special statuses can outlive their triggering elemental aura.
+        boolean hasStatuses = false;
+        for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
+            if (genshinecraft$auraState.statusTicks(key) > 0) {
+                hasStatuses = true;
+            }
         }
+        if (!genshinecraft$auraState.snapshot().isEmpty()) {
         ValueOutput list = output.child(GENSHINCRAFT_AURAS);
         for (var entry : genshinecraft$auraState.snapshot().entrySet()) {
             ValueOutput aura = list.child(entry.getKey().name());
@@ -48,11 +54,24 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
                 aura.putString("applier", entry.getValue().applier().toString());
             }
         }
+        }
+        if (hasStatuses) {
+            ValueOutput flags = output.child(GENSHINCRAFT_REACTIONS);
+            for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
+                flags.putInt(key, genshinecraft$auraState.statusTicks(key));
+            }
+        }
     }
 
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
     private void genshinecraft$loadAuras(ValueInput input, CallbackInfo ci) {
         genshinecraft$auraState.clear();
+        input.child(GENSHINCRAFT_REACTIONS).ifPresent(flags -> genshinecraft$auraState.restoreStatuses(
+                flags.getInt("electro").orElse(0),
+                flags.getInt("burning").orElse(0),
+                flags.getInt("quicken").orElse(0),
+                flags.getInt("frozen").orElse(0),
+                flags.getInt("superconduct").orElse(0)));
         input.child(GENSHINCRAFT_AURAS).ifPresent(list -> {
             for (CarrierData.Element element : CarrierData.Element.values()) {
                 list.child(element.name()).ifPresent(aura -> genshinecraft$restore(
@@ -65,9 +84,14 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
     *///?} else {
     @Inject(method = "addAdditionalSaveData", at = @At("TAIL"))
     private void genshinecraft$saveAuras(CompoundTag tag, CallbackInfo ci) {
-        if (genshinecraft$auraState.snapshot().isEmpty()) {
-            return;
+        // Special statuses can outlive their triggering elemental aura.
+        boolean hasStatuses = false;
+        for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
+            if (genshinecraft$auraState.statusTicks(key) > 0) {
+                hasStatuses = true;
+            }
         }
+        if (!genshinecraft$auraState.snapshot().isEmpty()) {
         CompoundTag saved = new CompoundTag();
         for (var entry : genshinecraft$auraState.snapshot().entrySet()) {
             CompoundTag aura = new CompoundTag();
@@ -79,11 +103,26 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
             saved.put(entry.getKey().name(), aura);
         }
         tag.put(GENSHINCRAFT_AURAS, saved);
+        }
+        if (hasStatuses) {
+            CompoundTag flags = new CompoundTag();
+            for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
+                flags.putInt(key, genshinecraft$auraState.statusTicks(key));
+            }
+            tag.put(GENSHINCRAFT_REACTIONS, flags);
+        }
     }
 
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
     private void genshinecraft$loadAuras(CompoundTag tag, CallbackInfo ci) {
         genshinecraft$auraState.clear();
+        if (tag.contains(GENSHINCRAFT_REACTIONS)) {
+            CompoundTag flags = tag.getCompound(GENSHINCRAFT_REACTIONS);
+            genshinecraft$auraState.restoreStatuses(
+                    flags.getInt("electro"), flags.getInt("burning"),
+                    flags.getInt("quicken"), flags.getInt("frozen"),
+                    flags.getInt("superconduct"));
+        }
         if (!tag.contains(GENSHINCRAFT_AURAS)) {
             return;
         }

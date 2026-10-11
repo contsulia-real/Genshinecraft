@@ -1,6 +1,7 @@
 package dev.genshinecraft.mixin;
 
 import dev.genshinecraft.combat.DamageNumbers;
+import dev.genshinecraft.element.ElementalBloomCore;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Display;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,7 +15,14 @@ public abstract class DamageNumberLifetimeMixin {
     @Inject(method = "tick", at = @At("TAIL"))
     private void genshinecraft$riseAndExpire(CallbackInfo ci) {
         Display display = (Display) (Object) this;
-        if (!(display.level() instanceof ServerLevel) || !DamageNumbers.isOurDisplay(display)) {
+        if (!(display.level() instanceof ServerLevel)) {
+            return;
+        }
+        if (ElementalBloomCore.isCore(display)) {
+            ElementalBloomCore.tick(display);
+            return;
+        }
+        if (!DamageNumbers.isOurDisplay(display)) {
             return;
         }
         if (display.tickCount >= 22) {

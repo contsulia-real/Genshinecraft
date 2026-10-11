@@ -47,6 +47,7 @@ public final class CarrierItems {
     public static final Map<CarrierData.Element, RegistrySupplier<Item>> MOON_WHEELS = registerElements("moon_wheel");
     public static final Map<CarrierData.Element, RegistrySupplier<Item>> STAR_WEDGES = registerElements("star_wedge");
     public static final Map<CarrierData.Element, RegistrySupplier<Item>> SIGILS = registerSigils();
+    public static final Map<CarrierData.Element, RegistrySupplier<Item>> CRYSTAL_SHARDS = registerCrystals();
     public static final RegistrySupplier<Item> MOON_SIGIL = ITEMS.register("moon_sigil", () -> new Item(sigilProperties("moon_sigil")));
 
     public static final RegistrySupplier<CreativeModeTab> CARRIER_TAB = TABS.register("carriers", () ->
@@ -59,6 +60,9 @@ public final class CarrierItems {
                             output.accept(MOON_WHEELS.get(element).get());
                             output.accept(STAR_WEDGES.get(element).get());
                             output.accept(SIGILS.get(element).get());
+                            if (CRYSTAL_SHARDS.containsKey(element)) {
+                                output.accept(CRYSTAL_SHARDS.get(element).get());
+                            }
                         }
                         output.accept(MOON_SIGIL.get());
                     }))
@@ -80,6 +84,17 @@ public final class CarrierItems {
         Map<CarrierData.Element, RegistrySupplier<Item>> result = new EnumMap<>(CarrierData.Element.class);
         for (CarrierData.Element element : CarrierData.Element.values()) {
             String id = element.name().toLowerCase(java.util.Locale.ROOT) + "_sigil";
+            result.put(element, ITEMS.register(id, () -> new Item(sigilProperties(id))));
+        }
+        return result;
+    }
+
+    private static Map<CarrierData.Element, RegistrySupplier<Item>> registerCrystals() {
+        Map<CarrierData.Element, RegistrySupplier<Item>> result = new EnumMap<>(CarrierData.Element.class);
+        for (CarrierData.Element element : new CarrierData.Element[]{
+                CarrierData.Element.PYRO, CarrierData.Element.HYDRO,
+                CarrierData.Element.ELECTRO, CarrierData.Element.CRYO}) {
+            String id = "crystal_" + element.name().toLowerCase(java.util.Locale.ROOT);
             result.put(element, ITEMS.register(id, () -> new Item(sigilProperties(id))));
         }
         return result;

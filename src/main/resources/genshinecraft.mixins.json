@@ -11,7 +11,8 @@
     "DamageNumberDisplayAccessor",
     "DamageNumberTextAccessor",
     "DamageNumberLifetimeMixin",
-    "ServerPlayerCritMixin"
+    "ServerPlayerCritMixin",
+    "ElementalCrystalPickupMixin"
   ],
   "injectors": {
     "defaultRequire": 1

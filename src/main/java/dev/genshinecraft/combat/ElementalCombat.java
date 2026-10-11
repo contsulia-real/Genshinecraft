@@ -33,6 +33,7 @@ import java.util.Map;
 /** Replaces the vanilla melee damage source, never the attack or damage calculation. */
 public final class ElementalCombat {
     private static final Map<CarrierData.Element, ResourceKey<DamageType>> ATTACK_TYPES = createDamageTypes();
+    private static final Map<CarrierData.Element, ResourceKey<DamageType>> REACTION_TYPES = createReactionDamageTypes();
 
     private ElementalCombat() {
     }
@@ -41,6 +42,24 @@ public final class ElementalCombat {
         Map<CarrierData.Element, ResourceKey<DamageType>> result = new EnumMap<>(CarrierData.Element.class);
         for (CarrierData.Element element : CarrierData.Element.values()) {
             String id = "element_" + element.name().toLowerCase(Locale.ROOT) + "_attack";
+            //? if >=26.3 {
+            /*result.put(element, ResourceKey.create(Registries.DAMAGE_TYPE,
+                    Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, id)));
+            *///?} else if =1.21.1 {
+            result.put(element, ResourceKey.create(Registries.DAMAGE_TYPE,
+                    ResourceLocation.fromNamespaceAndPath(Genshinecraft.MOD_ID, id)));
+            //?} else {
+            /*result.put(element, ResourceKey.create(Registries.DAMAGE_TYPE,
+                    new ResourceLocation(Genshinecraft.MOD_ID, id)));
+            *///?}
+        }
+        return result;
+    }
+
+    private static Map<CarrierData.Element, ResourceKey<DamageType>> createReactionDamageTypes() {
+        Map<CarrierData.Element, ResourceKey<DamageType>> result = new EnumMap<>(CarrierData.Element.class);
+        for (CarrierData.Element element : CarrierData.Element.values()) {
+            String id = "reaction_" + element.name().toLowerCase(Locale.ROOT);
             //? if >=26.3 {
             /*result.put(element, ResourceKey.create(Registries.DAMAGE_TYPE,
                     Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, id)));
@@ -106,6 +125,19 @@ public final class ElementalCombat {
         return new DamageSource(holder, projectile, player);
     }
 
+    /** Reaction damage has its own element color and attributes to its original player. */
+    public static DamageSource reactionSource(ServerLevel level, CarrierData.Element element, Player attacker) {
+        ResourceKey<DamageType> type = REACTION_TYPES.get(element);
+        //? if >=26.3 {
+        /*var holder = level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE)
+                .getOrThrow(type);
+        *///?} else {
+        var holder = level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
+                .getHolderOrThrow(type);
+        //?}
+        return new DamageSource(holder, attacker);
+    }
+
     /** Modify the original attack amount before Minecraft applies armor and resistance. */
     public static float reactionDamage(Player player, Entity target, DamageSource source,
                                        float amount, String attackGroup) {
@@ -114,19 +146,30 @@ public final class ElementalCombat {
             return amount;
         }
         CarrierData.Element incoming = sourceElement(source);
-        if (incoming == null) {
-            return amount;
-        }
         var state = ((ElementalAuraHolder) living).genshinecraft$auras();
+        if (incoming == null) {
+            // Shatter and Superconduct modify physical weapon damage; no bonus to elements.
+            float multiplier = state.isSuperconductActive() ? 1.30f : 1.0f;
+            if (state.isFrozen()) {
+                multiplier *= 1.25f;
+            }
+            return amount * multiplier;
+        }
         if (!state.canApply(player.getUUID(), incoming, attackGroup, living.tickCount)) {
             return amount;
         }
-        return amount * ElementalReactionEngine.preview(state, incoming).damageMultiplier();
+        var plan = ElementalReactionEngine.preview(state, incoming);
+        float flatBonus = switch (plan.reaction()) {
+            case AGGRAVATE -> 2f;
+            case SPREAD -> 2.4f;
+            default -> 0f;
+        };
+        return amount * plan.damageMultiplier() + flatBonus;
     }
 
     static CarrierData.Element sourceElement(DamageSource source) {
         for (CarrierData.Element element : CarrierData.Element.values()) {
-            if (source.is(ATTACK_TYPES.get(element))) {
+            if (source.is(ATTACK_TYPES.get(element)) || source.is(REACTION_TYPES.get(element))) {
                 return element;
             }
         }
@@ -146,6 +189,10 @@ public final class ElementalCombat {
     private static void spawnHitParticles(Player player, Entity target, DamageSource source,
                                           String attackGroup) {
         if (!(player.level() instanceof ServerLevel server)) {
+            return;
+        }
+        if (sourceElement(source) == null && target instanceof LivingEntity living) {
+            ElementalReactionEffects.onPhysicalHit(server, living);
             return;
         }
         for (CarrierData.Element element : CarrierData.Element.values()) {
