@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "genshinecraft:item/vision/sumeru/sumeru_dendro"
+    "layer0": "genshinecraft:item/vision/mondstadt/mondstadt_dendro"
   }
 }

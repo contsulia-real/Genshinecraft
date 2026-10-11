@@ -3,7 +3,7 @@
   "key.categories.genshinecraft": "Genshinecraft",
   "key.category.genshinecraft.carrier": "Genshinecraft",
   "hud.genshinecraft.header": "元素载体 %s/%s（%s 切换）",
-  "hud.genshinecraft.pending": "能量与技能冷却：尚未接入",
+  "hud.genshinecraft.pending": "能量动画预览（实际能量及冷却尚未接入）",
   "element.genshinecraft.anemo": "风",
   "element.genshinecraft.geo": "岩",
   "element.genshinecraft.electro": "雷",

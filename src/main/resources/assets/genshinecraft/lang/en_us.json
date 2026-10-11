@@ -3,7 +3,7 @@
   "key.categories.genshinecraft": "Genshinecraft",
   "key.category.genshinecraft.carrier": "Genshinecraft",
   "hud.genshinecraft.header": "Elemental Carriers %s/%s (Switch: %s)",
-  "hud.genshinecraft.pending": "Energy and skill cooldowns: not implemented",
+  "hud.genshinecraft.pending": "Energy animation preview (energy and cooldown unavailable)",
   "element.genshinecraft.anemo": "Anemo",
   "element.genshinecraft.geo": "Geo",
   "element.genshinecraft.electro": "Electro",

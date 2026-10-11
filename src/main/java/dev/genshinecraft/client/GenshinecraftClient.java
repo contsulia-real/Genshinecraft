@@ -9,6 +9,13 @@ import dev.genshinecraft.item.CarrierData;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+//? if =1.20.1 {
+/*import net.minecraft.resources.ResourceLocation;
+*///?} else if =1.21.1 {
+import net.minecraft.resources.ResourceLocation;
+//?} else {
+/*import net.minecraft.resources.Identifier;
+*///?}
 //? if >=26.3 {
 /*import net.minecraft.resources.Identifier;
 *///?}
@@ -91,41 +98,36 @@ public final class GenshinecraftClient {
                     ? Component.translatable("hud.genshinecraft.no_carrier").getString()
                     : Component.translatable("hud.genshinecraft.pending").getString();
 
-            int rows = Math.min(carriers.size(), Math.min(7, Math.max(1, (graphics.guiHeight() - 60) / 12)));
+            // Keep the list centered vertically against the right edge of the HUD.
+            int rows = Math.min(carriers.size(), Math.min(7, Math.max(1, (graphics.guiHeight() - 42) / 30)));
             int start = carriers.isEmpty() ? 0 : Math.max(0, Math.min(index - rows / 2, carriers.size() - rows));
-            List<String> lines = new ArrayList<>();
-            for (int i = start; i < start + rows; i++) {
-                CarrierEntry entry = carriers.get(i);
-                String element = Component.translatable("element.genshinecraft."
-                        + entry.data().element().name().toLowerCase(Locale.ROOT)).getString();
-                lines.add((i == index ? "> " : "  ") + entry.stack().getHoverName().getString()
-                        + " [" + element + "]  E:-- CD:--");
-            }
-            int width = Math.max(client.font.width(title), client.font.width(status));
-            for (String line : lines) {
-                width = Math.max(width, client.font.width(line));
-            }
-            width = Math.min(width + 12, graphics.guiWidth() - 12);
-            int height = 31 + lines.size() * 12;
-            graphics.fill(6, 16, 6 + width, 16 + height, 0xAA10141E);
+            int panelWidth = 172;
+            int x = Math.max(4, graphics.guiWidth() - panelWidth - 10);
+            int height = 24 + rows * 30 + 12;
+            int y = Math.max(4, (graphics.guiHeight() - height) / 2);
 
-            //? if >=26.3 {
-            /*graphics.text(client.font, title, 12, 21, 0xFFFFFFFF);
-            *///?} else {
-            graphics.drawString(client.font, title, 12, 21, 0xFFFFFFFF);
-            //?}
-            for (int i = 0; i < lines.size(); i++) {
+            drawText(graphics, client, title, Math.max(4, graphics.guiWidth() - client.font.width(title) - 10), y, 0xFFFFFFFF);
+            for (int i = 0; i < rows; i++) {
+                CarrierEntry entry = carriers.get(start + i);
+                int rowY = y + 18 + 30 * i;
+                boolean selected = start + i == index;
+                if (selected) {
+                    drawText(graphics, client, ">", x, rowY + 3, 0xFFFFD875);
+                }
                 //? if >=26.3 {
-                /*graphics.text(client.font, lines.get(i), 12, 33 + i * 12, 0xFFFFFFFF);
+                /*graphics.item(entry.stack(), x + 11, rowY);
                 *///?} else {
-                graphics.drawString(client.font, lines.get(i), 12, 33 + i * 12, 0xFFFFFFFF);
+                graphics.renderItem(entry.stack(), x + 11, rowY);
                 //?}
+                drawText(graphics, client, entry.stack().getHoverName().getString(),
+                        x + 31, rowY + 1, selected ? 0xFFFFD875 : 0xFFFFFFFF);
+                drawEnergyBar(graphics, entry.data().element(), x + 31, rowY + 15,
+                        client.level == null ? 0L : client.level.getGameTime());
+                drawText(graphics, client, "--", x + 100, rowY + 14, 0xFFB2B9C5);
             }
-            //? if >=26.3 {
-            /*graphics.text(client.font, status, 12, 33 + lines.size() * 12, 0xFFB2B9C5);
-            *///?} else {
-            graphics.drawString(client.font, status, 12, 33 + lines.size() * 12, 0xFFB2B9C5);
-            //?}
+            drawText(graphics, client, status,
+                    Math.max(4, graphics.guiWidth() - client.font.width(status) - 10),
+                    y + 19 + rows * 30, 0xFFB2B9C5);
         });
     }
 
@@ -159,4 +161,49 @@ public final class GenshinecraftClient {
 
     private record CarrierEntry(ItemStack stack, CarrierData data) {
     }
+    // HUD preview: there is no server-side elemental-energy amount yet.
+    // The full animated fill is displayed as artwork, never as a numeric percentage.
+    private static void drawEnergyBar(
+            //? if >=26.3 {
+            /*net.minecraft.client.gui.GuiGraphicsExtractor graphics,
+            *///?} else {
+            net.minecraft.client.gui.GuiGraphics graphics,
+            //?}
+            CarrierData.Element element, int x, int y, long gameTime) {
+        String name = element.name().toLowerCase(Locale.ROOT);
+        String base = "textures/item/energy/bar/energy_bar_" + name;
+        int frame = (int) ((gameTime / 3L) % 8L); // energy_bar_*_fill.png.mcmeta: frametime 3, eight 64x8 frames
+
+        //? if >=26.3 {
+        /*Identifier background = Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, base + "_bg.png");
+        Identifier fill = Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, base + "_fill.png");
+        graphics.blit(background, x, y, 64, 8, 0f, 1f, 0f, 1f);
+        graphics.blit(fill, x, y, 64, 8, 0f, 1f, frame / 8f, (frame + 1) / 8f);
+        *///?} else if =1.21.1 {
+        ResourceLocation background = ResourceLocation.fromNamespaceAndPath(Genshinecraft.MOD_ID, base + "_bg.png");
+        ResourceLocation fill = ResourceLocation.fromNamespaceAndPath(Genshinecraft.MOD_ID, base + "_fill.png");
+        graphics.blit(background, x, y, 0f, 0f, 64, 8, 64, 8);
+        graphics.blit(fill, x, y, 0f, (float) (frame * 8), 64, 8, 64, 64);
+        //?} else {
+        /*ResourceLocation background = new ResourceLocation(Genshinecraft.MOD_ID, base + "_bg.png");
+        ResourceLocation fill = new ResourceLocation(Genshinecraft.MOD_ID, base + "_fill.png");
+        graphics.blit(background, x, y, 0f, 0f, 64, 8, 64, 8);
+        graphics.blit(fill, x, y, 0f, (float) (frame * 8), 64, 8, 64, 64);
+        *///?}
+    }
+
+    private static void drawText(
+            //? if >=26.3 {
+            /*net.minecraft.client.gui.GuiGraphicsExtractor graphics,
+            *///?} else {
+            net.minecraft.client.gui.GuiGraphics graphics,
+            //?}
+            Minecraft client, String value, int x, int y, int color) {
+        //? if >=26.3 {
+        /*graphics.text(client.font, value, x, y, color);
+        *///?} else {
+        graphics.drawString(client.font, value, x, y, color);
+        //?}
+    }
+
 }
