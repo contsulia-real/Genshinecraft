@@ -7,8 +7,6 @@ import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.event.events.client.ClientTooltipEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
-import dev.architectury.registry.client.particle.ParticleProviderRegistry;
-import dev.genshinecraft.particle.ElementalParticles;
 import dev.genshinecraft.Genshinecraft;
 import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.CarrierItems;
@@ -66,17 +64,6 @@ public final class GenshinecraftClient {
 
     public static void init() {
         KeyMappingRegistry.register(SWITCH_CARRIER);
-        for (var particleType : ElementalParticles.SPARKS.values()) {
-            //? if >=26.3 {
-            /*ParticleProviderRegistry.register(particleType, sprites ->
-                    (type, level, x, y, z, vx, vy, vz, random) ->
-                            new ElementalSparkParticle(level, x, y, z, vx, vy, vz, sprites));
-            *///?} else {
-            ParticleProviderRegistry.register(particleType, sprites ->
-                    (type, level, x, y, z, vx, vy, vz) ->
-                            new ElementalSparkParticle(level, x, y, z, vx, vy, vz, sprites));
-            //?}
-        }
         // The creative inventory's item-picker tabs bypass vanilla server-side slot
         // clicks. Intercept only clicks on real player inventory/hotbar slots.
         //? if >=26.3 {

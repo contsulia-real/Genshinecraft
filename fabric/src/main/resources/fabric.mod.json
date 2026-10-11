@@ -12,6 +12,9 @@
   "entrypoints": {
     "main": [
       "dev.genshinecraft.fabric.GenshinecraftFabric"
+    ],
+    "client": [
+      "dev.genshinecraft.fabric.GenshinecraftFabricClient"
     ]
   },
   "depends": {

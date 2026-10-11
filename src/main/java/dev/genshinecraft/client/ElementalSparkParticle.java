@@ -10,7 +10,7 @@ import net.minecraft.client.particle.ParticleRenderType;
 //?}
 
 /** Short-lived sprite effect. Its silhouette and colour are authored in 8x8 PNG frames. */
-final class ElementalSparkParticle
+public final class ElementalSparkParticle
         //? if >=26.3 {
         /*extends SingleQuadParticle {
         *///?} else {
@@ -18,7 +18,7 @@ final class ElementalSparkParticle
         //?}
     private final SpriteSet sprites;
 
-    ElementalSparkParticle(ClientLevel level, double x, double y, double z,
+    public ElementalSparkParticle(ClientLevel level, double x, double y, double z,
                            double vx, double vy, double vz, SpriteSet sprites) {
         //? if >=26.3 {
         /*super(level, x, y, z, vx, vy, vz, sprites.first());
