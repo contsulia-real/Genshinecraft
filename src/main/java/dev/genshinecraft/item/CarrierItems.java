@@ -7,6 +7,7 @@ import dev.genshinecraft.Genshinecraft;
 import net.minecraft.core.registries.Registries;
 //? if >=1.21.1 {
 import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.codec.ByteBufCodecs;
 //?}
 import net.minecraft.network.chat.Component;
@@ -75,7 +76,7 @@ public final class CarrierItems {
         Map<CarrierData.Element, RegistrySupplier<Item>> result = new EnumMap<>(CarrierData.Element.class);
         for (CarrierData.Element element : CarrierData.Element.values()) {
             String name = kind + "_" + element.name().toLowerCase(java.util.Locale.ROOT);
-            result.put(element, ITEMS.register(name, () -> new ElementCarrierItem(properties(name), element, kind)));
+            result.put(element, ITEMS.register(name, () -> new ElementCarrierItem(properties(name, element), element, kind)));
         }
         return result;
     }
@@ -109,8 +110,13 @@ public final class CarrierItems {
         return properties;
     }
 
-    private static Item.Properties properties(String name) {
+    private static Item.Properties properties(String name, CarrierData.Element element) {
         Item.Properties properties = new Item.Properties().stacksTo(1).fireResistant();
+        //? if >=1.21.1 {
+        properties.component(DataComponents.ITEM_NAME,
+                Component.translatable("item." + Genshinecraft.MOD_ID + "." + name)
+                        .withStyle(style -> style.withColor(element.color())));
+        //?}
         //? if >=26.3 {
         /*properties.setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, name)));
         *///?}
@@ -164,6 +170,14 @@ public final class CarrierItems {
             this.element = element;
             this.kind = kind;
         }
+
+        //? if =1.20.1 {
+        /*@Override
+        public Component getName(ItemStack stack) {
+            return Component.translatable(getDescriptionId())
+                    .withStyle(style -> style.withColor(element.color()));
+        }
+        *///?}
 
         @Override
         public boolean overrideStackedOnOther(ItemStack carrier, Slot slot, ClickAction action, Player player) {

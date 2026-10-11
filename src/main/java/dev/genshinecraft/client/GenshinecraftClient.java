@@ -214,20 +214,8 @@ public final class GenshinecraftClient {
         if (binding != null) {
             lines.add(Component.translatable("tooltip.genshinecraft.weapon_bound",
                     boundCarrierName(binding)).withStyle(style ->
-                    style.withColor(TextColor.fromRgb(elementColor(binding.element())))));
+                    style.withColor(TextColor.fromRgb(binding.element().color()))));
         }
-    }
-
-    private static int elementColor(CarrierData.Element element) {
-        return switch (element) {
-            case ANEMO -> 0x73DDB9;
-            case GEO -> 0xE8BB65;
-            case ELECTRO -> 0xB78DEB;
-            case DENDRO -> 0x93CA65;
-            case HYDRO -> 0x64B5EF;
-            case PYRO -> 0xF08062;
-            case CRYO -> 0x9BD9F0;
-        };
     }
 
     private static Component boundCarrierName(WeaponBinding binding) {

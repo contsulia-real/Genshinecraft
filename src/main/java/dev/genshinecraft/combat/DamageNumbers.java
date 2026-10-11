@@ -85,15 +85,7 @@ public final class DamageNumbers {
         if (element == null) {
             return PHYSICAL_COLOR;
         }
-        return switch (element) {
-            case ANEMO -> 0x73DDB9;
-            case GEO -> 0xE8BB65;
-            case ELECTRO -> 0xB78DEB;
-            case DENDRO -> 0x93CA65;
-            case HYDRO -> 0x64B5EF;
-            case PYRO -> 0xF08062;
-            case CRYO -> 0x9BD9F0;
-        };
+        return element.color();
     }
 
     /** Two depth-separated layers create a deep charcoal silhouette without a box. */

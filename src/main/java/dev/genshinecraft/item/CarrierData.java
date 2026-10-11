@@ -20,7 +20,19 @@ public record CarrierData(
         String statue, UUID owner, String ownerName, boolean abandoned
 ) {
     public enum Element {
-        ANEMO, GEO, ELECTRO, DENDRO, HYDRO, PYRO, CRYO
+        ANEMO(0x73DDB9), GEO(0xE8BB65), ELECTRO(0xB78DEB),
+        DENDRO(0x93CA65), HYDRO(0x64B5EF), PYRO(0xF08062),
+        CRYO(0x9BD9F0);
+
+        private final int color;
+
+        Element(int color) {
+            this.color = color;
+        }
+
+        public int color() {
+            return color;
+        }
     }
 
     //? if >=1.21.1 {
