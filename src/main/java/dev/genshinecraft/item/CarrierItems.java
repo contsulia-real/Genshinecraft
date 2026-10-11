@@ -21,11 +21,6 @@ public final class CarrierItems {
     private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Genshinecraft.MOD_ID, Registries.ITEM);
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Genshinecraft.MOD_ID, Registries.CREATIVE_MODE_TAB);
 
-    // Legacy registry IDs are retained so old worlds can still load their items.
-    public static final RegistrySupplier<Item> VISION = register("vision");
-    public static final RegistrySupplier<Item> MOON_WHEEL = register("moon_wheel");
-    public static final RegistrySupplier<Item> STAR_WEDGE = register("star_wedge");
-
     public static final Map<CarrierData.Element, RegistrySupplier<Item>> VISIONS = registerElements("vision");
     public static final Map<CarrierData.Element, RegistrySupplier<Item>> MOON_WHEELS = registerElements("moon_wheel");
     public static final Map<CarrierData.Element, RegistrySupplier<Item>> STAR_WEDGES = registerElements("star_wedge");
@@ -44,10 +39,6 @@ public final class CarrierItems {
     );
 
     private CarrierItems() {
-    }
-
-    private static RegistrySupplier<Item> register(String name) {
-        return ITEMS.register(name, () -> new Item(properties(name)));
     }
 
     private static Map<CarrierData.Element, RegistrySupplier<Item>> registerElements(String kind) {
@@ -72,8 +63,7 @@ public final class CarrierItems {
     }
 
     public static boolean isCarrier(Item item) {
-        return item instanceof ElementCarrierItem || item == VISION.get()
-                || item == MOON_WHEEL.get() || item == STAR_WEDGE.get();
+        return item instanceof ElementCarrierItem;
     }
 
     public static CarrierData.Element fixedElement(Item item) {

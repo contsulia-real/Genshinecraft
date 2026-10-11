@@ -36,7 +36,7 @@ public record CarrierData(
         if (!CarrierItems.isCarrier(item) || element == null || skill == null || skill.isBlank()
                 || burst == null || burst.isBlank() || statue == null || statue.isBlank()
                 || skillLevel < 0 || burstLevel < 0 || elementalMastery < 0
-                || (CarrierItems.fixedElement(item) != null && CarrierItems.fixedElement(item) != element)) {
+                || CarrierItems.fixedElement(item) != element) {
             throw new IllegalArgumentException("Invalid carrier data");
         }
         ItemStack stack = new ItemStack(item);
@@ -74,7 +74,7 @@ public record CarrierData(
                     bool(tag, ABANDONED)
             );
             Element fixed = CarrierItems.fixedElement(stack.getItem());
-            return fixed == null || fixed == parsed.element ? parsed : null;
+            return fixed == parsed.element ? parsed : null;
         } catch (IllegalArgumentException exception) {
             return null;
         }
