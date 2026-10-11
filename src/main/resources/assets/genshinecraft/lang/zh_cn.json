@@ -48,5 +48,8 @@
   "item.genshinecraft.hydro_sigil": "水之印",
   "item.genshinecraft.pyro_sigil": "火之印",
   "item.genshinecraft.cryo_sigil": "冰之印",
-  "item.genshinecraft.moon_sigil": "月之印"
+  "item.genshinecraft.moon_sigil": "月之印",
+  "key.genshinecraft.damage_numbers": "切换伤害飘字",
+  "message.genshinecraft.damage_numbers.on": "伤害飘字：开启",
+  "message.genshinecraft.damage_numbers.off": "伤害飘字：关闭"
 }

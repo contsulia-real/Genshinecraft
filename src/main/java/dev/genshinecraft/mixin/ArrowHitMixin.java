@@ -1,9 +1,11 @@
 package dev.genshinecraft.mixin;
 
 import dev.genshinecraft.combat.ElementalCombat;
+import dev.genshinecraft.combat.DamageNumbers;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 //? if >=26.3 {
@@ -43,15 +45,23 @@ public abstract class ArrowHitMixin {
     private boolean genshinecraft$hit(Entity target, DamageSource source, float amount) {
         //? if >=26.3 {
         /*Projectile shot = (Projectile) (Object) this;
+        float healthBefore = target instanceof LivingEntity living ? living.getHealth() : 0f;
+        float absorptionBefore = target instanceof LivingEntity living ? living.getAbsorptionAmount() : 0f;
         float adjusted = shot.getOwner() instanceof Player player
                 ? ElementalCombat.reactionDamage(player, target, source, amount, "normal_projectile") : amount;
         boolean hurt = target.hurtOrSimulate(source, adjusted);
         *///?} else {
         Projectile shot = (Projectile) (Object) this;
+        float healthBefore = target instanceof LivingEntity living ? living.getHealth() : 0f;
+        float absorptionBefore = target instanceof LivingEntity living ? living.getAbsorptionAmount() : 0f;
         float adjusted = shot.getOwner() instanceof Player player
                 ? ElementalCombat.reactionDamage(player, target, source, amount, "normal_projectile") : amount;
         boolean hurt = target.hurt(source, adjusted);
         //?}
+        if (hurt && shot.getOwner() instanceof Player attacker) {
+            DamageNumbers.afterHit(attacker, target, source, healthBefore, absorptionBefore,
+                    ((AbstractArrow) (Object) this).isCritArrow(), false);
+        }
         if (hurt) {
             ElementalCombat.onProjectileHit((Projectile) (Object) this, target, source);
         }

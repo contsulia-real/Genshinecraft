@@ -1,11 +1,13 @@
 package dev.genshinecraft.mixin;
 
 import dev.genshinecraft.combat.ElementalCombat;
+import dev.genshinecraft.combat.DamageNumbers;
 import net.minecraft.world.damagesource.DamageSource;
 //? if <26.3 {
 import net.minecraft.world.damagesource.DamageSources;
 //?}
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -42,9 +44,13 @@ public abstract class PlayerAttackMixin {
             at = @At(value = "INVOKE", target =
                     "Lnet/minecraft/world/entity/Entity;hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z"))
     private boolean genshinecraft$hitParticles(Entity target, DamageSource source, float amount) {
+        float healthBefore = target instanceof LivingEntity living ? living.getHealth() : 0f;
+        float absorptionBefore = target instanceof LivingEntity living ? living.getAbsorptionAmount() : 0f;
         boolean damaged = target.hurt(source,
                 ElementalCombat.reactionDamage((Player) (Object) this, target, source, amount, "normal_melee"));
         if (damaged) {
+            DamageNumbers.afterHit((Player) (Object) this, target, source,
+                    healthBefore, absorptionBefore, false, true);
             ElementalCombat.onMeleeHit((Player) (Object) this, target, source);
         }
         return damaged;
@@ -54,9 +60,13 @@ public abstract class PlayerAttackMixin {
             at = @At(value = "INVOKE", target =
                     "Lnet/minecraft/world/entity/Entity;hurtOrSimulate(Lnet/minecraft/world/damagesource/DamageSource;F)Z"))
     private boolean genshinecraft$hitParticles(Entity target, DamageSource source, float amount) {
+        float healthBefore = target instanceof LivingEntity living ? living.getHealth() : 0f;
+        float absorptionBefore = target instanceof LivingEntity living ? living.getAbsorptionAmount() : 0f;
         boolean damaged = target.hurtOrSimulate(source,
                 ElementalCombat.reactionDamage((Player) (Object) this, target, source, amount, "normal_melee"));
         if (damaged) {
+            DamageNumbers.afterHit((Player) (Object) this, target, source,
+                    healthBefore, absorptionBefore, false, true);
             ElementalCombat.onMeleeHit((Player) (Object) this, target, source);
         }
         return damaged;

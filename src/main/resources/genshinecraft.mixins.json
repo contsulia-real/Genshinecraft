@@ -7,9 +7,16 @@
     "ProjectileElementMixin",
     "ArrowHitMixin",
     "TridentHitMixin",
-    "LivingElementalAuraMixin"
+    "LivingElementalAuraMixin",
+    "DamageNumberDisplayAccessor",
+    "DamageNumberTextAccessor",
+    "DamageNumberLifetimeMixin",
+    "ServerPlayerCritMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "client": [
+    "DamageNumberVisibilityMixin"
+  ]
 }

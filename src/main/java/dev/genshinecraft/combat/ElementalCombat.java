@@ -124,7 +124,7 @@ public final class ElementalCombat {
         return amount * ElementalReactionEngine.preview(state, incoming).damageMultiplier();
     }
 
-    private static CarrierData.Element sourceElement(DamageSource source) {
+    static CarrierData.Element sourceElement(DamageSource source) {
         for (CarrierData.Element element : CarrierData.Element.values()) {
             if (source.is(ATTACK_TYPES.get(element))) {
                 return element;

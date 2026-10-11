@@ -48,5 +48,8 @@
   "item.genshinecraft.hydro_sigil": "Hydro Sigil",
   "item.genshinecraft.pyro_sigil": "Pyro Sigil",
   "item.genshinecraft.cryo_sigil": "Cryo Sigil",
-  "item.genshinecraft.moon_sigil": "Moon Sigil"
+  "item.genshinecraft.moon_sigil": "Moon Sigil",
+  "key.genshinecraft.damage_numbers": "Toggle Damage Numbers",
+  "message.genshinecraft.damage_numbers.on": "Damage Numbers: On",
+  "message.genshinecraft.damage_numbers.off": "Damage Numbers: Off"
 }

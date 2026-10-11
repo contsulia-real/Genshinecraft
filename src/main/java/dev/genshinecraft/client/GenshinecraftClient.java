@@ -56,6 +56,19 @@ public final class GenshinecraftClient {
             //?}
     );
 
+    private static final KeyMapping TOGGLE_DAMAGE_NUMBERS = new KeyMapping(
+            //? if >=26.3 {
+            /*"key.genshinecraft.damage_numbers", InputConstants.Type.KEYBOARD, InputConstants.KEY_F9,
+            *///?} else {
+            "key.genshinecraft.damage_numbers", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F9,
+            //?}
+            //? if >=26.3 {
+            /*KeyMapping.Category.register(Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, "carrier"))
+            *///?} else {
+            "key.categories.genshinecraft"
+            //?}
+    );
+
     private static UUID selectedId;
     private static UUID currentPlayerId;
 
@@ -63,6 +76,8 @@ public final class GenshinecraftClient {
     }
 
     public static void init() {
+        DamageNumberSettings.load();
+        KeyMappingRegistry.register(TOGGLE_DAMAGE_NUMBERS);
         KeyMappingRegistry.register(SWITCH_CARRIER);
         // The creative inventory's item-picker tabs bypass vanilla server-side slot
         // clicks. Intercept only clicks on real player inventory/hotbar slots.
@@ -88,6 +103,18 @@ public final class GenshinecraftClient {
             if (!playerId.equals(currentPlayerId)) {
                 currentPlayerId = playerId;
                 selectedId = null;
+            }
+
+            while (TOGGLE_DAMAGE_NUMBERS.consumeClick()) {
+                DamageNumberSettings.toggle();
+                Component message = Component.translatable(DamageNumberSettings.enabled()
+                        ? "message.genshinecraft.damage_numbers.on"
+                        : "message.genshinecraft.damage_numbers.off");
+                //? if >=26.3 {
+                /*client.player.sendOverlayMessage(message);
+                *///?} else {
+                client.player.displayClientMessage(message, true);
+                //?}
             }
 
             List<CarrierEntry> carriers = availableCarriers(client);
