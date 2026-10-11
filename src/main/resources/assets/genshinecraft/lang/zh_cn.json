@@ -33,5 +33,12 @@
   "item.genshinecraft.star_wedge_cryo": "冰元素星之楔",
   "tooltip.genshinecraft.weapon_bound": "已绑定：%s",
   "tooltip.genshinecraft.vision_style": "款式：%s",
-  "region.genshinecraft.mondstadt": "蒙德"
+  "region.genshinecraft.mondstadt": "蒙德",
+  "death.attack.genshinecraft.element_anemo_attack": "%1$s 被 %2$s 的风元素攻击击败",
+  "death.attack.genshinecraft.element_geo_attack": "%1$s 被 %2$s 的岩元素攻击击败",
+  "death.attack.genshinecraft.element_electro_attack": "%1$s 被 %2$s 的雷元素攻击击败",
+  "death.attack.genshinecraft.element_dendro_attack": "%1$s 被 %2$s 的草元素攻击击败",
+  "death.attack.genshinecraft.element_hydro_attack": "%1$s 被 %2$s 的水元素攻击击败",
+  "death.attack.genshinecraft.element_pyro_attack": "%1$s 被 %2$s 的火元素攻击击败",
+  "death.attack.genshinecraft.element_cryo_attack": "%1$s 被 %2$s 的冰元素攻击击败"
 }

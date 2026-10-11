@@ -33,5 +33,12 @@
   "item.genshinecraft.star_wedge_cryo": "Cryo Stellar Wedge",
   "tooltip.genshinecraft.weapon_bound": "Bound: %s",
   "tooltip.genshinecraft.vision_style": "Style: %s",
-  "region.genshinecraft.mondstadt": "Mondstadt"
+  "region.genshinecraft.mondstadt": "Mondstadt",
+  "death.attack.genshinecraft.element_anemo_attack": "%1$s was slain by %2$s's anemo attack",
+  "death.attack.genshinecraft.element_geo_attack": "%1$s was slain by %2$s's geo attack",
+  "death.attack.genshinecraft.element_electro_attack": "%1$s was slain by %2$s's electro attack",
+  "death.attack.genshinecraft.element_dendro_attack": "%1$s was slain by %2$s's dendro attack",
+  "death.attack.genshinecraft.element_hydro_attack": "%1$s was slain by %2$s's hydro attack",
+  "death.attack.genshinecraft.element_pyro_attack": "%1$s was slain by %2$s's pyro attack",
+  "death.attack.genshinecraft.element_cryo_attack": "%1$s was slain by %2$s's cryo attack"
 }

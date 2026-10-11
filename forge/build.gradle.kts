@@ -77,6 +77,7 @@ tasks.processResources {
 }
 
 tasks.shadowJar {
+    manifest.attributes["MixinConfigs"] = "genshinecraft.mixins.json"
     configurations = listOf(shadowBundle)
     archiveClassifier.set("dev-shadow")
     exclude("fabric.mod.json", "architectury.common.json")
@@ -88,5 +89,6 @@ tasks.remapJar {
 }
 
 tasks.jar {
+    manifest.attributes["MixinConfigs"] = "genshinecraft.mixins.json"
     archiveClassifier.set("dev")
 }
