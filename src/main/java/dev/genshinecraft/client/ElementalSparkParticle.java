@@ -27,7 +27,7 @@ public final class ElementalSparkParticle
         //?}
         this.sprites = sprites;
         this.lifetime = 10 + this.random.nextInt(7);
-        this.quadSize = 0.11f + this.random.nextFloat() * 0.08f;
+        this.quadSize = 0.085f + this.random.nextFloat() * 0.055f;
         this.friction = 0.87f;
         this.gravity = 0.025f;
         this.hasPhysics = false;

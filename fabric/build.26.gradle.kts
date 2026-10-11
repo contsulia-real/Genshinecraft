@@ -35,12 +35,18 @@ configurations {
 val fabricLoaderVersion = common.property("fabricLoaderVersion") as String
 val fabricApiVersion = common.property("fabricApiVersion") as String
 val architecturyApiVersion = common.property("architecturyApiVersion") as String
+val modMenuVersion = common.property("modMenuVersion") as String
+
+repositories {
+    maven("https://maven.terraformersmc.com/releases/") { name = "Terraformers" }
+}
 
 dependencies {
     minecraft("net.minecraft:minecraft:$minecraft")
     implementation("net.fabricmc:fabric-loader:$fabricLoaderVersion")
     implementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
     implementation("dev.architectury:architectury-fabric:$architecturyApiVersion")
+    compileOnly("com.terraformersmc:modmenu:$modMenuVersion") { isTransitive = false }
     commonBundle(project(common.path)) { isTransitive = false }
     shadowBundle(project(path = common.path, configuration = "transformProductionFabric")) { isTransitive = false }
 }

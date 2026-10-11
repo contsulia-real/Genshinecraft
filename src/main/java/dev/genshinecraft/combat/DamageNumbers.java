@@ -56,9 +56,9 @@ public final class DamageNumbers {
         String number = Math.abs(dealt - Math.round(dealt)) < 0.05f
                 ? Integer.toString(Math.round(dealt))
                 : String.format(Locale.ROOT, "%.1f", dealt);
-        spawn(server, x, y, z, number, color, false);
+        spawnOutlined(server, x, y, z, number, color, false);
         if (critical) {
-            spawn(server, x, y, z, "✦", color, true);
+            spawnOutlined(server, x, y, z, "✦", color, true);
         } else if (melee) {
             RECENT_MELEE.put(player, new RecentHit(target, server.getGameTime(), x, y, z, color));
         }
@@ -70,7 +70,7 @@ public final class DamageNumbers {
         if (hit != null && hit.target() == target
                 && attacker.level() instanceof ServerLevel server
                 && server.getGameTime() - hit.tick() <= 1) {
-            spawn(server, hit.x(), hit.y(), hit.z(), "✦", hit.color(), true);
+            spawnOutlined(server, hit.x(), hit.y(), hit.z(), "✦", hit.color(), true);
         }
     }
 
@@ -96,8 +96,15 @@ public final class DamageNumbers {
         };
     }
 
+    /** Two depth-separated layers create a deep charcoal silhouette without a box. */
+    private static void spawnOutlined(ServerLevel server, double x, double y, double z,
+                                      String value, int color, boolean icon) {
+        spawn(server, x, y, z, value, 0x1B1724, icon, true);
+        spawn(server, x, y, z, value, color, icon, false);
+    }
+
     private static void spawn(ServerLevel server, double x, double y, double z,
-                              String value, int color, boolean icon) {
+                              String value, int color, boolean icon, boolean outline) {
         //? if >=26.3 {
         /*Display.TextDisplay display = new Display.TextDisplay(EntityTypes.TEXT_DISPLAY, server);
         *///?} else {
@@ -113,10 +120,13 @@ public final class DamageNumbers {
                 Component.literal(value).withStyle(style -> style.withColor(color)));
         ((DamageNumberTextAccessor) display).genshinecraft$background(0);
         ((DamageNumberDisplayAccessor) display).genshinecraft$billboard(Display.BillboardConstraints.CENTER);
-        float scale = icon ? 0.58f : 1.35f;
+        // The dark silhouette is slightly larger and sits behind the colored text.
+        float scale = icon ? (outline ? 0.80f : 0.70f)
+                : (outline ? 1.64f : 1.53f);
         ((DamageNumberDisplayAccessor) display).genshinecraft$transformation(
                 new Transformation(
-                        new Vector3f(icon ? 0.27f : 0f, icon ? 0.17f : 0f, 0f),
+                        new Vector3f(icon ? 0.30f : 0f, icon ? 0.20f : 0f,
+                                outline ? -0.025f : 0.025f),
                         new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
         server.addFreshEntity(display);
     }

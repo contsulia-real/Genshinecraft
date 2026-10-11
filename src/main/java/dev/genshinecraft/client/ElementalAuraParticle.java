@@ -34,8 +34,8 @@ public final class ElementalAuraParticle
         this.sprites = sprites;
         this.emblem = emblem;
         this.lifetime = emblem ? 26 + random.nextInt(9) : 18 + random.nextInt(11);
-        this.quadSize = emblem ? 0.20f + random.nextFloat() * 0.07f
-                : 0.12f + random.nextFloat() * 0.06f;
+        this.quadSize = emblem ? 0.16f + random.nextFloat() * 0.05f
+                : 0.095f + random.nextFloat() * 0.045f;
         this.xd = vx * 0.4;
         this.yd = (emblem ? 0.004 : 0.012) + Math.abs(vy) * 0.3;
         this.zd = vz * 0.4;

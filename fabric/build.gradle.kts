@@ -39,6 +39,11 @@ loom {
 val fabricLoaderVersion = common.property("fabricLoaderVersion") as String
 val fabricApiVersion = common.property("fabricApiVersion") as String
 val architecturyApiVersion = common.property("architecturyApiVersion") as String
+val modMenuVersion = common.property("modMenuVersion") as String
+
+repositories {
+    maven("https://maven.terraformersmc.com/releases/") { name = "Terraformers" }
+}
 
 dependencies {
     minecraft("com.mojang:minecraft:$minecraft")
@@ -46,6 +51,7 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:$fabricLoaderVersion")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
     modImplementation("dev.architectury:architectury-fabric:$architecturyApiVersion")
+    modCompileOnly("com.terraformersmc:modmenu:$modMenuVersion") { isTransitive = false }
     commonBundle(project(path = common.path, configuration = "namedElements")) { isTransitive = false }
     shadowBundle(project(path = common.path, configuration = "transformProductionFabric")) { isTransitive = false }
 }

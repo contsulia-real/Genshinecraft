@@ -15,6 +15,9 @@
     ],
     "client": [
       "dev.genshinecraft.fabric.GenshinecraftFabricClient"
+    ],
+    "modmenu": [
+      "dev.genshinecraft.fabric.GenshinecraftModMenu"
     ]
   },
   "depends": {
@@ -25,5 +28,8 @@
   },
   "mixins": [
     "genshinecraft.mixins.json"
-  ]
+  ],
+  "suggests": {
+    "modmenu": "*"
+  }
 }
