@@ -6,7 +6,8 @@
     "PlayerAttackMixin",
     "ProjectileElementMixin",
     "ArrowHitMixin",
-    "TridentHitMixin"
+    "TridentHitMixin",
+    "LivingElementalAuraMixin"
   ],
   "injectors": {
     "defaultRequire": 1

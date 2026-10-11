@@ -1,6 +1,7 @@
 package dev.genshinecraft.fabric;
 
 import dev.genshinecraft.client.ElementalSparkParticle;
+import dev.genshinecraft.client.ElementalAuraParticle;
 import dev.genshinecraft.particle.ElementalParticles;
 import net.fabricmc.api.ClientModInitializer;
 //? if >=26.3 {
@@ -22,6 +23,17 @@ public final class GenshinecraftFabricClient implements ClientModInitializer {
             ParticleFactoryRegistry.getInstance().register(particleType.get(), sprites ->
                     (type, level, x, y, z, vx, vy, vz) ->
                             new ElementalSparkParticle(level, x, y, z, vx, vy, vz, sprites));
+            //?}
+        }
+        for (var particleType : ElementalParticles.AURAS.values()) {
+            //? if >=26.3 {
+            /*ParticleProviderRegistry.getInstance().register(particleType.get(), sprites ->
+                    (type, level, x, y, z, vx, vy, vz, random) ->
+                            new ElementalAuraParticle(level, x, y, z, vx, vy, vz, sprites));
+            *///?} else {
+            ParticleFactoryRegistry.getInstance().register(particleType.get(), sprites ->
+                    (type, level, x, y, z, vx, vy, vz) ->
+                            new ElementalAuraParticle(level, x, y, z, vx, vy, vz, sprites));
             //?}
         }
     }

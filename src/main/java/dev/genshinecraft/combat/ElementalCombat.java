@@ -4,6 +4,7 @@ import dev.genshinecraft.Genshinecraft;
 import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.WeaponBinding;
 import dev.genshinecraft.particle.ElementalParticles;
+import dev.genshinecraft.element.ElementalAuraHolder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 //? if >=26.3 {
@@ -17,6 +18,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import java.util.UUID;
@@ -119,6 +121,9 @@ public final class ElementalCombat {
         for (CarrierData.Element element : CarrierData.Element.values()) {
             if (!source.is(ATTACK_TYPES.get(element))) {
                 continue;
+            }
+            if (target instanceof LivingEntity living && living.isAlive()) {
+                ((ElementalAuraHolder) living).genshinecraft$auras().apply(element, player.getUUID());
             }
             // Keep the near-side placement, but restore the original subtle burst.
             double dx = player.getX() - target.getX();

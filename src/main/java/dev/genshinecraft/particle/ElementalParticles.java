@@ -19,6 +19,8 @@ public final class ElementalParticles {
 
     public static final Map<CarrierData.Element, RegistrySupplier<SimpleParticleType>> SPARKS = registerSparks();
 
+    public static final Map<CarrierData.Element, RegistrySupplier<SimpleParticleType>> AURAS = registerAuras();
+
     private ElementalParticles() {
     }
 
@@ -27,6 +29,17 @@ public final class ElementalParticles {
                 new EnumMap<>(CarrierData.Element.class);
         for (CarrierData.Element element : CarrierData.Element.values()) {
             String id = "element_" + element.name().toLowerCase(Locale.ROOT);
+            result.put(element, PARTICLES.register(id, () -> new SimpleParticleType(true) {
+            }));
+        }
+        return result;
+    }
+
+    private static Map<CarrierData.Element, RegistrySupplier<SimpleParticleType>> registerAuras() {
+        Map<CarrierData.Element, RegistrySupplier<SimpleParticleType>> result =
+                new EnumMap<>(CarrierData.Element.class);
+        for (CarrierData.Element element : CarrierData.Element.values()) {
+            String id = "attach_" + element.name().toLowerCase(Locale.ROOT);
             result.put(element, PARTICLES.register(id, () -> new SimpleParticleType(true) {
             }));
         }
