@@ -60,18 +60,22 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
             for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
                 flags.putInt(key, genshinecraft$auraState.statusTicks(key));
             }
+            flags.putInt("freeze_hits", genshinecraft$auraState.remainingFrozenHits());
         }
     }
 
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
     private void genshinecraft$loadAuras(ValueInput input, CallbackInfo ci) {
         genshinecraft$auraState.clear();
-        input.child(GENSHINCRAFT_REACTIONS).ifPresent(flags -> genshinecraft$auraState.restoreStatuses(
-                flags.getInt("electro").orElse(0),
-                flags.getInt("burning").orElse(0),
-                flags.getInt("quicken").orElse(0),
-                flags.getInt("frozen").orElse(0),
-                flags.getInt("superconduct").orElse(0)));
+        input.child(GENSHINCRAFT_REACTIONS).ifPresent(flags -> {
+            genshinecraft$auraState.restoreStatuses(
+                    flags.getInt("electro").orElse(0),
+                    flags.getInt("burning").orElse(0),
+                    flags.getInt("quicken").orElse(0),
+                    flags.getInt("frozen").orElse(0),
+                    flags.getInt("superconduct").orElse(0));
+            genshinecraft$auraState.restoreFrozenHits(flags.getInt("freeze_hits").orElse(3));
+        });
         input.child(GENSHINCRAFT_AURAS).ifPresent(list -> {
             for (CarrierData.Element element : CarrierData.Element.values()) {
                 list.child(element.name()).ifPresent(aura -> genshinecraft$restore(
@@ -109,6 +113,7 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
             for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
                 flags.putInt(key, genshinecraft$auraState.statusTicks(key));
             }
+            flags.putInt("freeze_hits", genshinecraft$auraState.remainingFrozenHits());
             tag.put(GENSHINCRAFT_REACTIONS, flags);
         }
     }
@@ -122,6 +127,8 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
                     flags.getInt("electro"), flags.getInt("burning"),
                     flags.getInt("quicken"), flags.getInt("frozen"),
                     flags.getInt("superconduct"));
+            genshinecraft$auraState.restoreFrozenHits(
+                    flags.contains("freeze_hits") ? flags.getInt("freeze_hits") : 3);
         }
         if (!tag.contains(GENSHINCRAFT_AURAS)) {
             return;

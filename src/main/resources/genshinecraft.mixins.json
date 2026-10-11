@@ -12,7 +12,10 @@
     "DamageNumberTextAccessor",
     "DamageNumberLifetimeMixin",
     "ServerPlayerCritMixin",
-    "ElementalCrystalPickupMixin"
+    "ElementalCrystalPickupMixin",
+    "FrozenLivingMovementMixin",
+    "FrozenPlayerActionsMixin",
+    "FrozenMobAiMixin"
   ],
   "injectors": {
     "defaultRequire": 1

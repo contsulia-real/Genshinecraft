@@ -10,6 +10,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemEntity.class)
 public abstract class ElementalCrystalPickupMixin {
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void genshinecraft$stationaryShard(CallbackInfo ci) {
+        ElementalCrystals.tick((ItemEntity) (Object) this);
+    }
+
     @Inject(method = "playerTouch", at = @At("HEAD"), cancellable = true)
     private void genshinecraft$crystalShield(Player player, CallbackInfo ci) {
         if (ElementalCrystals.pickup((ItemEntity) (Object) this, player)) {

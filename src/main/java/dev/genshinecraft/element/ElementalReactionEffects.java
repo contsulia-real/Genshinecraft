@@ -6,8 +6,6 @@ import dev.genshinecraft.item.CarrierData.Element;
 import dev.genshinecraft.particle.ElementalParticles;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.damagesource.DamageSource;
@@ -26,14 +24,40 @@ public final class ElementalReactionEffects {
     public static void onHit(ServerLevel level, Player attacker, LivingEntity target,
                              Element incoming, String attackGroup) {
         ElementalAuraState state = ((ElementalAuraHolder) target).genshinecraft$auras();
+        onFrozenAttack(level, target);
         if (!state.recordHit(attacker.getUUID(), incoming, attackGroup, target.tickCount)) {
             return;
         }
-
-        // Bloom cores persist independently of their original host target.
         ElementalBloomCore.trigger(level, target, incoming);
+        applyIncomingElement(level, attacker, target, incoming, false);
+    }
 
+    /**
+     * Swirl disperses an existing element into each nearby target as a new
+     * elemental application. This must resolve the target's gauge/reaction,
+     * not overwrite its aura. Secondary application cannot generate Swirl
+     * again because it carries Pyro/Hydro/Electro/Cryo, never Anemo.
+     */
+    private static void applyIncomingElement(ServerLevel level, Player attacker,
+                                             LivingEntity target, Element incoming,
+                                             boolean swirlSpread) {
+        ElementalAuraState state = ((ElementalAuraHolder) target).genshinecraft$auras();
+        if (swirlSpread) {
+            ElementalBloomCore.trigger(level, target, incoming);
+        }
         ElementalReactionEngine.Plan plan = ElementalReactionEngine.preview(state, incoming);
+        // Hydro Swirl itself only spreads Wet; secondary Vaporize can still
+        // damage targets already carrying Pyro.
+        if (swirlSpread && (incoming != Element.HYDRO
+                || plan.reaction() == ElementalReactionEngine.Reaction.VAPORIZE)) {
+            float multiplier = plan.damageMultiplier();
+            float bonus = switch (plan.reaction()) {
+                case AGGRAVATE -> 2f;
+                case SPREAD -> 2.4f;
+                default -> 0f;
+            };
+            dealDamage(level, target, incoming, attacker.getUUID(), 1.8f * multiplier + bonus);
+        }
         if (plan.reaction() == ElementalReactionEngine.Reaction.NONE) {
             if (incoming != Element.ANEMO && incoming != Element.GEO) {
                 state.apply(incoming, attacker.getUUID());
@@ -64,20 +88,14 @@ public final class ElementalReactionEffects {
             case FROZEN -> {
                 state.beginFrozen();
                 target.setTicksFrozen(Math.max(target.getTicksFrozen(), 60));
-                //? if >=26.3 {
-                /*target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
-                        60, 6, false, true));
-                *///?} else {
-                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,
-                        60, 6, false, true));
-                //?}
             }
             case SWIRL -> {
+                // Original target gets the Swirl hit. Nearby targets receive
+                // the *element*, with their own reaction consumed/resolved.
+                dealDamage(level, target, plan.existing(), attacker.getUUID(), 1.8f);
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
                         target.getBoundingBox().inflate(3.0), e -> e != target && e.isAlive())) {
-                    ((ElementalAuraHolder) other).genshinecraft$auras()
-                            .apply(plan.existing(), attacker.getUUID());
-                    dealDamage(level, other, plan.existing(), attacker.getUUID(), 1.8f);
+                    applyIncomingElement(level, attacker, other, plan.existing(), true);
                     spawnReaction(level, other, "swirl_" + elementKey(plan.existing()), 6);
                 }
             }
@@ -106,18 +124,15 @@ public final class ElementalReactionEffects {
     }
 
     public static void onPhysicalHit(ServerLevel level, LivingEntity target) {
+        onFrozenAttack(level, target);
+    }
+
+    private static void onFrozenAttack(ServerLevel level, LivingEntity target) {
         ElementalAuraState state = ((ElementalAuraHolder) target).genshinecraft$auras();
-        if (!state.isFrozen()) {
-            return;
+        if (state.onAttackLanded()) {
+            target.setTicksFrozen(0);
+            spawnReaction(level, target, "shatter", 12);
         }
-        state.shatter();
-        target.setTicksFrozen(0);
-        //? if >=26.3 {
-        /*target.removeEffect(MobEffects.SLOWNESS);
-        *///?} else {
-        target.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
-        //?}
-        spawnReaction(level, target, "shatter", 12);
     }
 
     public static void dealDamage(ServerLevel level, LivingEntity target, Element element,

@@ -38,10 +38,18 @@ public final class ElementalBloomCore {
     }
 
     public static void spawn(ServerLevel level, LivingEntity target, Player owner) {
-        AABB range = target.getBoundingBox().inflate(7.0);
-        List<Display.TextDisplay> nearby = cores(level, range);
+        List<Display.TextDisplay> nearby = new java.util.ArrayList<>();
+        for (var entity : level.getAllEntities()) {
+            if (entity instanceof Display.TextDisplay display && isCore(display)) {
+                nearby.add(display);
+            }
+        }
         if (nearby.size() >= MAX_NEARBY) {
-            detonate(level, nearby.get(0), 2.0f, 2.5, "bloom");
+            // Entity queries have no defined ordering; expire the oldest core.
+            Display.TextDisplay oldest = nearby.stream()
+                    .max(java.util.Comparator.comparingInt(core -> core.tickCount))
+                    .orElseThrow();
+            detonate(level, oldest, 2.0f, 2.5, "bloom");
         }
         //? if >=26.3 {
         /*Display.TextDisplay core = new Display.TextDisplay(net.minecraft.world.entity.EntityTypes.TEXT_DISPLAY, level);

@@ -34,6 +34,8 @@ public final class ElementalAuraState {
     private int burningTicks;
     private int quickenTicks;
     private int frozenTicks;
+    private int frozenHitsRemaining;
+    private static final int FREEZE_HITS_TO_BREAK = 3;
     private int superconductTicks;
     private UUID burningOwner;
     private UUID electroOwner;
@@ -74,6 +76,7 @@ public final class ElementalAuraState {
         burningTicks = clampTicks(burning);
         quickenTicks = clampTicks(quicken);
         frozenTicks = clampTicks(frozen);
+        frozenHitsRemaining = frozenTicks > 0 ? FREEZE_HITS_TO_BREAK : 0;
         superconductTicks = clampTicks(superconduct);
     }
 
@@ -143,10 +146,32 @@ public final class ElementalAuraState {
 
     public void beginFrozen() {
         frozenTicks = 60;
+        frozenHitsRemaining = FREEZE_HITS_TO_BREAK;
+    }
+
+    public int remainingFrozenHits() {
+        return frozenHitsRemaining;
+    }
+
+    public void restoreFrozenHits(int hits) {
+        frozenHitsRemaining = frozenTicks > 0 ? Math.max(1, Math.min(FREEZE_HITS_TO_BREAK, hits)) : 0;
+    }
+
+    /** Only actual landed weapon/projectile attacks count, never burning or DoT. */
+    public boolean onAttackLanded() {
+        if (frozenTicks <= 0) {
+            return false;
+        }
+        if (--frozenHitsRemaining <= 0) {
+            shatter();
+            return true;
+        }
+        return false;
     }
 
     public void shatter() {
         frozenTicks = 0;
+        frozenHitsRemaining = 0;
     }
 
     public void beginSuperconduct() {
@@ -167,6 +192,7 @@ public final class ElementalAuraState {
         burningTicks = 0;
         quickenTicks = 0;
         frozenTicks = 0;
+        frozenHitsRemaining = 0;
         superconductTicks = 0;
         burningOwner = null;
         electroOwner = null;
@@ -205,7 +231,7 @@ public final class ElementalAuraState {
             burningTicks--;
             if (entity.tickCount % 20 == 0) {
                 ElementalReactionEffects.dealDamage(server, entity, CarrierData.Element.PYRO,
-                        burningOwner, 1.5f);
+                        burningOwner, 0.35f);
                 server.sendParticles(ElementalParticles.reaction("burning"),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
                         4, 0.2, 0.3, 0.2, 0.02);
@@ -221,6 +247,9 @@ public final class ElementalAuraState {
         }
         if (frozenTicks > 0) {
             frozenTicks--;
+            // Server-authoritative immobility; LivingEntity/Mob/Player mixins stop
+            // travel, jumps and attacks while this timer is active.
+            entity.setDeltaMovement(0, 0, 0);
             entity.setTicksFrozen(Math.max(entity.getTicksFrozen(), 45));
             if (entity.tickCount % 12 == 0) {
                 server.sendParticles(ElementalParticles.reaction("frozen"),
@@ -228,6 +257,7 @@ public final class ElementalAuraState {
                         entity.getZ(), 2, 0.25, 0.25, 0.25, 0.009);
             }
             if (frozenTicks == 0) {
+                frozenHitsRemaining = 0;
                 entity.setTicksFrozen(0);
             }
         }
