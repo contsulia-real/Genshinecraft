@@ -1,21 +1,29 @@
 package dev.genshinecraft.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import dev.architectury.event.EventResult;
+import dev.architectury.event.events.client.ClientScreenInputEvent;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.event.events.client.ClientTooltipEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
+import dev.architectury.registry.client.particle.ParticleProviderRegistry;
+import dev.genshinecraft.particle.ElementalParticles;
 import dev.genshinecraft.Genshinecraft;
 import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.CarrierItems;
 import dev.genshinecraft.item.WeaponBinding;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 //? if >=1.21.1 {
 import net.minecraft.core.component.DataComponents;
 //?}
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.world.inventory.Slot;
 //? if =1.20.1 {
 /*import net.minecraft.resources.ResourceLocation;
 *///?} else if =1.21.1 {
@@ -58,6 +66,26 @@ public final class GenshinecraftClient {
 
     public static void init() {
         KeyMappingRegistry.register(SWITCH_CARRIER);
+        for (var particleType : ElementalParticles.SPARKS.values()) {
+            //? if >=26.3 {
+            /*ParticleProviderRegistry.register(particleType, sprites ->
+                    (type, level, x, y, z, vx, vy, vz, random) ->
+                            new ElementalSparkParticle(level, x, y, z, vx, vy, vz, sprites));
+            *///?} else {
+            ParticleProviderRegistry.register(particleType, sprites ->
+                    (type, level, x, y, z, vx, vy, vz) ->
+                            new ElementalSparkParticle(level, x, y, z, vx, vy, vz, sprites));
+            //?}
+        }
+        // The creative inventory's item-picker tabs bypass vanilla server-side slot
+        // clicks. Intercept only clicks on real player inventory/hotbar slots.
+        //? if >=26.3 {
+        /*ClientScreenInputEvent.MOUSE_CLICKED_PRE.register((client, screen, click, doubleClick) ->
+                tryCreativeBind(client, screen, click.x(), click.y(), click.button()));
+        *///?} else {
+        ClientScreenInputEvent.MOUSE_CLICKED_PRE.register((client, screen, x, y, button) ->
+                tryCreativeBind(client, screen, x, y, button));
+        //?}
         //? if =1.20.1 {
         /*ClientTooltipEvent.ITEM.register((stack, lines, flag) -> appendBindingTooltip(stack, lines));
         *///?} else {
@@ -119,6 +147,67 @@ public final class GenshinecraftClient {
         });
     }
 
+    private static EventResult tryCreativeBind(Minecraft client, Screen screen,
+                                               double mouseX, double mouseY, int button) {
+        if (button != 1 || !(screen instanceof CreativeModeInventoryScreen creative)
+                || client.player == null || client.gameMode == null
+                || !client.player.getAbilities().instabuild) {
+            return EventResult.pass();
+        }
+        // The creative item-picker and the creative inventory tab have separate
+        // cursor stacks. Vanilla routes the inventory tab through inventoryMenu.
+        ItemStack creativeCarried = creative.getMenu().getCarried();
+        ItemStack inventoryCarried = client.player.inventoryMenu.getCarried();
+        if (creativeCarried.isEmpty() && inventoryCarried.isEmpty()) {
+            return EventResult.pass();
+        }
+
+        // All three supported versions use the vanilla creative screen's
+        // 195x136 inventory backdrop. Slots store backdrop-relative positions.
+        double localX = mouseX - (screen.width - 195) / 2.0;
+        double localY = mouseY - (screen.height - 136) / 2.0;
+        for (Slot slot : creative.getMenu().slots) {
+            if (slot.container != client.player.getInventory()
+                    || localX < slot.x - 1 || localX >= slot.x + 17
+                    || localY < slot.y - 1 || localY >= slot.y + 17
+                    || !slot.mayPickup(client.player)) {
+                continue;
+            }
+            ItemStack inSlot = slot.getItem();
+            ItemStack carried = creativeCarried;
+            boolean carrierOnCursor = CarrierItems.isCarrier(carried) && WeaponBinding.isWeapon(inSlot);
+            boolean carrierInSlot = CarrierItems.isCarrier(inSlot) && WeaponBinding.isWeapon(carried);
+            if (!carrierOnCursor && !carrierInSlot) {
+                carried = inventoryCarried;
+                carrierOnCursor = CarrierItems.isCarrier(carried) && WeaponBinding.isWeapon(inSlot);
+                carrierInSlot = CarrierItems.isCarrier(inSlot) && WeaponBinding.isWeapon(carried);
+            }
+            if (!carrierOnCursor && !carrierInSlot) {
+                return EventResult.pass();
+            }
+            int syncSlot = -1;
+            for (int i = 0; i < client.player.inventoryMenu.slots.size(); i++) {
+                Slot inventorySlot = client.player.inventoryMenu.slots.get(i);
+                if (inventorySlot.container == slot.container && inventorySlot.index == slot.index) {
+                    syncSlot = i;
+                    break;
+                }
+            }
+            if (syncSlot < 0) {
+                return EventResult.pass();
+            }
+            boolean bound = carrierOnCursor
+                    ? WeaponBinding.bind(inSlot, carried, client.player)
+                    : WeaponBinding.bind(carried, inSlot, client.player);
+            if (bound) {
+                slot.setChanged();
+                client.gameMode.handleCreativeModeItemAdd(inSlot, syncSlot);
+            }
+            return EventResult.interruptTrue();
+        }
+        return EventResult.pass();
+    }
+
     private static void appendBindingTooltip(ItemStack stack, List<Component> lines) {
         if (CarrierItems.isVision(stack)) {
             lines.add(Component.translatable("tooltip.genshinecraft.vision_style",
@@ -128,8 +217,21 @@ public final class GenshinecraftClient {
         WeaponBinding binding = WeaponBinding.read(stack);
         if (binding != null) {
             lines.add(Component.translatable("tooltip.genshinecraft.weapon_bound",
-                    boundCarrierName(binding)).withStyle(ChatFormatting.AQUA));
+                    boundCarrierName(binding)).withStyle(style ->
+                    style.withColor(TextColor.fromRgb(elementColor(binding.element())))));
         }
+    }
+
+    private static int elementColor(CarrierData.Element element) {
+        return switch (element) {
+            case ANEMO -> 0x73DDB9;
+            case GEO -> 0xE8BB65;
+            case ELECTRO -> 0xB78DEB;
+            case DENDRO -> 0x93CA65;
+            case HYDRO -> 0x64B5EF;
+            case PYRO -> 0xF08062;
+            case CRYO -> 0x9BD9F0;
+        };
     }
 
     private static Component boundCarrierName(WeaponBinding binding) {

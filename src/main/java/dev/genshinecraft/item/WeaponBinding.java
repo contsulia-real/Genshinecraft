@@ -93,6 +93,23 @@ public record WeaponBinding(UUID carrierId, UUID owner, CarrierData.Element elem
         //?}
     }
 
+    /** Remove only Genshinecraft's binding; preserve enchantments, names and other item data. */
+    public static boolean clear(ItemStack weapon) {
+        //? if =1.20.1 {
+        /*CompoundTag root = weapon.getTag();
+        if (root == null || !root.contains("genshinecraft.weapon_binding")) {
+            return false;
+        }
+        root.remove("genshinecraft.weapon_binding");
+        if (root.isEmpty()) {
+            weapon.setTag(null);
+        }
+        return true;
+        *///?} else {
+        return weapon.remove(CarrierItems.weaponBindingType()) != null;
+        //?}
+    }
+
     // The binding is a reference: a carrier taken away or abandoned cannot power the weapon.
     public static CarrierData resolve(ItemStack weapon, Player player) {
         WeaponBinding binding = read(weapon);

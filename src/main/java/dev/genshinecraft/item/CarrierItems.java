@@ -134,7 +134,10 @@ public final class CarrierItems {
                     || !WeaponBinding.isWeapon(slot.getItem())) {
                 return false;
             }
-            if (player instanceof ServerPlayer && WeaponBinding.bind(slot.getItem(), carrier, player)) {
+            // Creative inventory clicks run locally; its inventory listener sends changed
+            // slots to the server via the normal creative-mode item update packet.
+            if ((player instanceof ServerPlayer || player.getAbilities().instabuild)
+                    && WeaponBinding.bind(slot.getItem(), carrier, player)) {
                 slot.setChanged();
             }
             return true;
@@ -147,7 +150,7 @@ public final class CarrierItems {
                     || !WeaponBinding.isWeapon(carried)) {
                 return false;
             }
-            if (player instanceof ServerPlayer) {
+            if (player instanceof ServerPlayer || player.getAbilities().instabuild) {
                 WeaponBinding.bind(carried, carrier, player);
             }
             return true;
