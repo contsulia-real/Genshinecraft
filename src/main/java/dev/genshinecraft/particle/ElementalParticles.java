@@ -9,6 +9,7 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.Registries;
 
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -22,6 +23,31 @@ public final class ElementalParticles {
     public static final Map<CarrierData.Element, RegistrySupplier<SimpleParticleType>> AURAS = registerAuras();
 
     public static final Map<CarrierData.Element, RegistrySupplier<SimpleParticleType>> EMBLEMS = registerEmblems();
+
+    /** Each reaction has its own 16px sprite sequence and native client provider. */
+    public static final Map<String, RegistrySupplier<SimpleParticleType>> REACTIONS = registerReactions();
+
+    private static Map<String, RegistrySupplier<SimpleParticleType>> registerReactions() {
+        Map<String, RegistrySupplier<SimpleParticleType>> effects = new LinkedHashMap<>();
+        for (String id : new String[]{
+                "overloaded", "superconduct", "electro_charged", "frozen", "shatter",
+                "burning", "bloom", "burgeon", "hyperbloom",
+                "quicken", "aggravate", "spread", "vaporize", "melt",
+                "swirl_pyro", "swirl_hydro", "swirl_electro", "swirl_cryo",
+                "crystallize_pyro", "crystallize_hydro", "crystallize_electro", "crystallize_cryo"}) {
+            effects.put(id, PARTICLES.register("reaction_" + id, () -> new SimpleParticleType(true) {
+            }));
+        }
+        return Map.copyOf(effects);
+    }
+
+    public static SimpleParticleType reaction(String id) {
+        RegistrySupplier<SimpleParticleType> type = REACTIONS.get(id);
+        if (type == null) {
+            throw new IllegalArgumentException("Unknown elemental reaction particle: " + id);
+        }
+        return type.get();
+    }
 
     private ElementalParticles() {
     }

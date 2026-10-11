@@ -41,7 +41,7 @@ public final class ElementalBloomCore {
         AABB range = target.getBoundingBox().inflate(7.0);
         List<Display.TextDisplay> nearby = cores(level, range);
         if (nearby.size() >= MAX_NEARBY) {
-            detonate(level, nearby.get(0), null, 2.0f, 2.5);
+            detonate(level, nearby.get(0), 2.0f, 2.5, "bloom");
         }
         //? if >=26.3 {
         /*Display.TextDisplay core = new Display.TextDisplay(net.minecraft.world.entity.EntityTypes.TEXT_DISPLAY, level);
@@ -64,7 +64,7 @@ public final class ElementalBloomCore {
                 new Transformation(new Vector3f(), new Quaternionf(),
                         new Vector3f(1.10f, 1.10f, 1.10f), new Quaternionf()));
         level.addFreshEntity(core);
-        particles(level, x, y, z, 5);
+        particles(level, x, y, z, 5, "bloom");
     }
 
     public static void tick(Display display) {
@@ -72,10 +72,10 @@ public final class ElementalBloomCore {
             return;
         }
         if (display.tickCount % 12 == 0) {
-            particles(level, display.getX(), display.getY(), display.getZ(), 2);
+            particles(level, display.getX(), display.getY(), display.getZ(), 2, "bloom");
         }
         if (display.tickCount >= CORE_LIFETIME) {
-            detonate(level, (Display.TextDisplay) display, null, 2f, 2.5);
+            detonate(level, (Display.TextDisplay) display, 2f, 2.5, "bloom");
         }
     }
 
@@ -90,7 +90,7 @@ public final class ElementalBloomCore {
         }
         Display.TextDisplay core = nearby.get(0);
         if (incoming == Element.PYRO) {
-            detonate(level, core, null, 4f, 3.0);
+            detonate(level, core, 4f, 3.0, "burgeon");
         } else {
             UUID owner = owner(core);
             LivingEntity selected = hit;
@@ -107,7 +107,7 @@ public final class ElementalBloomCore {
                 }
             }
             ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, owner, 4f);
-            level.sendParticles(ElementalParticles.SPARKS.get(Element.DENDRO).get(),
+            level.sendParticles(ElementalParticles.reaction("hyperbloom"),
                     selected.getX(), selected.getY() + selected.getBbHeight() * 0.6,
                     selected.getZ(), 12, 0.25, 0.3, 0.25, 0.08);
             core.discard();
@@ -130,8 +130,8 @@ public final class ElementalBloomCore {
         return null;
     }
 
-    private static void detonate(ServerLevel level, Display.TextDisplay core, LivingEntity ignored,
-                                 float damage, double radius) {
+    private static void detonate(ServerLevel level, Display.TextDisplay core,
+                                 float damage, double radius, String effect) {
         UUID source = owner(core);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
                 core.getBoundingBox().inflate(radius), e -> e.isAlive())) {
@@ -141,12 +141,13 @@ public final class ElementalBloomCore {
             }
             ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, source, damage);
         }
-        particles(level, core.getX(), core.getY(), core.getZ(), 14);
+        particles(level, core.getX(), core.getY(), core.getZ(), 14, effect);
         core.discard();
     }
 
-    private static void particles(ServerLevel level, double x, double y, double z, int count) {
-        level.sendParticles(ElementalParticles.SPARKS.get(Element.DENDRO).get(),
+    private static void particles(ServerLevel level, double x, double y, double z,
+                                  int count, String effect) {
+        level.sendParticles(ElementalParticles.reaction(effect),
                 x, y, z, count, 0.25, 0.2, 0.25, 0.04);
     }
 }

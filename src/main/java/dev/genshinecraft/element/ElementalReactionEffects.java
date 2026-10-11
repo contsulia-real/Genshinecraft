@@ -31,9 +31,7 @@ public final class ElementalReactionEffects {
         }
 
         // Bloom cores persist independently of their original host target.
-        if (ElementalBloomCore.trigger(level, target, incoming)) {
-            burst(level, target, incoming, 8);
-        }
+        ElementalBloomCore.trigger(level, target, incoming);
 
         ElementalReactionEngine.Plan plan = ElementalReactionEngine.preview(state, incoming);
         if (plan.reaction() == ElementalReactionEngine.Reaction.NONE) {
@@ -80,7 +78,7 @@ public final class ElementalReactionEffects {
                     ((ElementalAuraHolder) other).genshinecraft$auras()
                             .apply(plan.existing(), attacker.getUUID());
                     dealDamage(level, other, plan.existing(), attacker.getUUID(), 1.8f);
-                    burst(level, other, plan.existing(), 5);
+                    spawnReaction(level, other, "swirl_" + elementKey(plan.existing()), 6);
                 }
             }
             case CRYSTALLIZE -> ElementalCrystals.drop(level, target, plan.existing());
@@ -99,12 +97,12 @@ public final class ElementalReactionEffects {
                 // Vaporize and Melt already modified the original hit's damage.
             }
         }
-        burst(level, target, incoming, 12);
-        if (plan.existing() != null) {
-            level.sendParticles(ElementalParticles.EMBLEMS.get(plan.existing()).get(),
-                    target.getX(), target.getY() + target.getBbHeight() * 0.8,
-                    target.getZ(), 3, 0.35, 0.2, 0.35, 0.015);
-        }
+        String effect = switch (plan.reaction()) {
+            case SWIRL -> "swirl_" + elementKey(plan.existing());
+            case CRYSTALLIZE -> "crystallize_" + elementKey(plan.existing());
+            default -> plan.reaction().name().toLowerCase(java.util.Locale.ROOT);
+        };
+        spawnReaction(level, target, effect, 12);
     }
 
     public static void onPhysicalHit(ServerLevel level, LivingEntity target) {
@@ -119,7 +117,7 @@ public final class ElementalReactionEffects {
         *///?} else {
         target.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
         //?}
-        burst(level, target, Element.CRYO, 10);
+        spawnReaction(level, target, "shatter", 12);
     }
 
     public static void dealDamage(ServerLevel level, LivingEntity target, Element element,
@@ -163,9 +161,13 @@ public final class ElementalReactionEffects {
         }
     }
 
-    private static void burst(ServerLevel level, LivingEntity target, Element element, int count) {
-        level.sendParticles(ElementalParticles.SPARKS.get(element).get(),
+    private static String elementKey(Element element) {
+        return element.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    public static void spawnReaction(ServerLevel level, LivingEntity target, String reaction, int count) {
+        level.sendParticles(ElementalParticles.reaction(reaction),
                 target.getX(), target.getY() + target.getBbHeight() * 0.62, target.getZ(),
-                count, 0.3, 0.35, 0.3, 0.07);
+                count, 0.3, 0.32, 0.3, 0.055);
     }
 }

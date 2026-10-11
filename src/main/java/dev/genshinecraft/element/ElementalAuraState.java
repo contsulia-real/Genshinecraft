@@ -186,11 +186,18 @@ public final class ElementalAuraState {
             electroChargedTicks--;
             if (!has(CarrierData.Element.HYDRO) || !has(CarrierData.Element.ELECTRO)) {
                 electroChargedTicks = 0;
-            } else if (entity.tickCount % 20 == 0) {
-                consume(CarrierData.Element.HYDRO, 0.4f);
-                consume(CarrierData.Element.ELECTRO, 0.4f);
-                ElementalReactionEffects.dealDamage(server, entity, CarrierData.Element.ELECTRO,
-                        electroOwner, 1.6f);
+            } else {
+                if (entity.tickCount % 10 == 0) {
+                    server.sendParticles(ElementalParticles.reaction("electro_charged"),
+                            entity.getX(), entity.getY() + entity.getBbHeight() * 0.65,
+                            entity.getZ(), 2, 0.25, 0.28, 0.25, 0.012);
+                }
+                if (entity.tickCount % 20 == 0) {
+                    consume(CarrierData.Element.HYDRO, 0.4f);
+                    consume(CarrierData.Element.ELECTRO, 0.4f);
+                    ElementalReactionEffects.dealDamage(server, entity, CarrierData.Element.ELECTRO,
+                            electroOwner, 1.6f);
+                }
             }
         }
 
@@ -199,7 +206,7 @@ public final class ElementalAuraState {
             if (entity.tickCount % 20 == 0) {
                 ElementalReactionEffects.dealDamage(server, entity, CarrierData.Element.PYRO,
                         burningOwner, 1.5f);
-                server.sendParticles(ElementalParticles.SPARKS.get(CarrierData.Element.PYRO).get(),
+                server.sendParticles(ElementalParticles.reaction("burning"),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
                         4, 0.2, 0.3, 0.2, 0.02);
             }
@@ -207,7 +214,7 @@ public final class ElementalAuraState {
         if (quickenTicks > 0) {
             quickenTicks--;
             if (entity.tickCount % 20 == 0) {
-                server.sendParticles(ElementalParticles.EMBLEMS.get(CarrierData.Element.DENDRO).get(),
+                server.sendParticles(ElementalParticles.reaction("quicken"),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.7, entity.getZ(),
                         1, 0.25, 0.15, 0.25, 0.008);
             }
@@ -215,6 +222,11 @@ public final class ElementalAuraState {
         if (frozenTicks > 0) {
             frozenTicks--;
             entity.setTicksFrozen(Math.max(entity.getTicksFrozen(), 45));
+            if (entity.tickCount % 12 == 0) {
+                server.sendParticles(ElementalParticles.reaction("frozen"),
+                        entity.getX(), entity.getY() + entity.getBbHeight() * 0.65,
+                        entity.getZ(), 2, 0.25, 0.25, 0.25, 0.009);
+            }
             if (frozenTicks == 0) {
                 entity.setTicksFrozen(0);
             }

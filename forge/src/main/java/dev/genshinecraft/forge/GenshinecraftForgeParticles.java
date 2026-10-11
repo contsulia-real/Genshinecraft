@@ -3,6 +3,7 @@ package dev.genshinecraft.forge;
 import dev.genshinecraft.Genshinecraft;
 import dev.genshinecraft.client.ElementalSparkParticle;
 import dev.genshinecraft.client.ElementalAuraParticle;
+import dev.genshinecraft.client.ElementalReactionParticle;
 import dev.genshinecraft.particle.ElementalParticles;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
@@ -31,6 +32,15 @@ public final class GenshinecraftForgeParticles {
             event.registerSpriteSet(particleType.get(), sprites ->
                     (type, level, x, y, z, vx, vy, vz) ->
                             new ElementalAuraParticle(level, x, y, z, vx, vy, vz, sprites, true));
+        }
+        for (var entry : ElementalParticles.REACTIONS.entrySet()) {
+            boolean lingering = entry.getKey().equals("burning")
+                    || entry.getKey().equals("electro_charged")
+                    || entry.getKey().equals("frozen")
+                    || entry.getKey().equals("quicken");
+            event.registerSpriteSet(entry.getValue().get(), sprites ->
+                    (type, level, x, y, z, vx, vy, vz) ->
+                            new ElementalReactionParticle(level, x, y, z, vx, vy, vz, sprites, lingering));
         }
     }
 }
