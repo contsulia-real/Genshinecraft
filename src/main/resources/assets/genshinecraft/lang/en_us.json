@@ -30,5 +30,8 @@
   "item.genshinecraft.star_wedge_dendro": "Dendro Stellar Wedge",
   "item.genshinecraft.star_wedge_hydro": "Hydro Stellar Wedge",
   "item.genshinecraft.star_wedge_pyro": "Pyro Stellar Wedge",
-  "item.genshinecraft.star_wedge_cryo": "Cryo Stellar Wedge"
+  "item.genshinecraft.star_wedge_cryo": "Cryo Stellar Wedge",
+  "tooltip.genshinecraft.weapon_bound": "Bound: %s",
+  "tooltip.genshinecraft.vision_style": "Style: %s",
+  "region.genshinecraft.mondstadt": "Mondstadt"
 }

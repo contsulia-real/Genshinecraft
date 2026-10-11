@@ -13,6 +13,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.SlotAccess;
 //? if >=26.3 {
 /*import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -30,6 +35,11 @@ public final class CarrierItems {
             DataComponentType.<CarrierData>builder()
                     .persistent(CarrierData.CODEC)
                     .networkSynchronized(ByteBufCodecs.fromCodec(CarrierData.CODEC))
+                    .build());
+    private static final RegistrySupplier<DataComponentType<?>> WEAPON_BINDING = COMPONENTS.register("weapon_binding", () ->
+            DataComponentType.<WeaponBinding>builder()
+                    .persistent(WeaponBinding.CODEC)
+                    .networkSynchronized(ByteBufCodecs.fromCodec(WeaponBinding.CODEC))
                     .build());
     //?}
 
@@ -57,7 +67,7 @@ public final class CarrierItems {
         Map<CarrierData.Element, RegistrySupplier<Item>> result = new EnumMap<>(CarrierData.Element.class);
         for (CarrierData.Element element : CarrierData.Element.values()) {
             String name = kind + "_" + element.name().toLowerCase(java.util.Locale.ROOT);
-            result.put(element, ITEMS.register(name, () -> new ElementCarrierItem(properties(name), element)));
+            result.put(element, ITEMS.register(name, () -> new ElementCarrierItem(properties(name), element, kind)));
         }
         return result;
     }
@@ -82,10 +92,21 @@ public final class CarrierItems {
         return item instanceof ElementCarrierItem carrier ? carrier.element : null;
     }
 
+    public static boolean isVision(ItemStack stack) {
+        return stack.getItem() instanceof ElementCarrierItem carrier && carrier.kind.equals("vision");
+    }
+
     //? if >=1.21.1 {
     @SuppressWarnings("unchecked")
     public static DataComponentType<CarrierData> carrierDataType() {
         return (DataComponentType<CarrierData>) CARRIER_DATA.get();
+    }
+    //?}
+
+    //? if >=1.21.1 {
+    @SuppressWarnings("unchecked")
+    public static DataComponentType<WeaponBinding> weaponBindingType() {
+        return (DataComponentType<WeaponBinding>) WEAPON_BINDING.get();
     }
     //?}
 
@@ -99,10 +120,37 @@ public final class CarrierItems {
 
     private static final class ElementCarrierItem extends Item {
         private final CarrierData.Element element;
+        private final String kind;
 
-        private ElementCarrierItem(Properties properties, CarrierData.Element element) {
+        private ElementCarrierItem(Properties properties, CarrierData.Element element, String kind) {
             super(properties);
             this.element = element;
+            this.kind = kind;
+        }
+
+        @Override
+        public boolean overrideStackedOnOther(ItemStack carrier, Slot slot, ClickAction action, Player player) {
+            if (action != ClickAction.SECONDARY || !slot.mayPickup(player)
+                    || !WeaponBinding.isWeapon(slot.getItem())) {
+                return false;
+            }
+            if (player instanceof ServerPlayer && WeaponBinding.bind(slot.getItem(), carrier, player)) {
+                slot.setChanged();
+            }
+            return true;
+        }
+
+        @Override
+        public boolean overrideOtherStackedOnMe(ItemStack carrier, ItemStack carried, Slot slot,
+                                                 ClickAction action, Player player, SlotAccess access) {
+            if (action != ClickAction.SECONDARY || !slot.mayPickup(player)
+                    || !WeaponBinding.isWeapon(carried)) {
+                return false;
+            }
+            if (player instanceof ServerPlayer) {
+                WeaponBinding.bind(carried, carrier, player);
+            }
+            return true;
         }
     }
 }

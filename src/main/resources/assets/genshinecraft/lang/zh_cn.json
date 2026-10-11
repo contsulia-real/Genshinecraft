@@ -30,5 +30,8 @@
   "item.genshinecraft.star_wedge_dendro": "草元素星之楔",
   "item.genshinecraft.star_wedge_hydro": "水元素星之楔",
   "item.genshinecraft.star_wedge_pyro": "火元素星之楔",
-  "item.genshinecraft.star_wedge_cryo": "冰元素星之楔"
+  "item.genshinecraft.star_wedge_cryo": "冰元素星之楔",
+  "tooltip.genshinecraft.weapon_bound": "已绑定：%s",
+  "tooltip.genshinecraft.vision_style": "款式：%s",
+  "region.genshinecraft.mondstadt": "蒙德"
 }

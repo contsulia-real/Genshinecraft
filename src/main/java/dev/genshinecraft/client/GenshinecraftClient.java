@@ -3,9 +3,14 @@ package dev.genshinecraft.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
+import dev.architectury.event.events.client.ClientTooltipEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import dev.genshinecraft.Genshinecraft;
 import dev.genshinecraft.item.CarrierData;
+import dev.genshinecraft.item.CarrierItems;
+import dev.genshinecraft.item.WeaponBinding;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 //? if =1.20.1 {
@@ -50,6 +55,11 @@ public final class GenshinecraftClient {
 
     public static void init() {
         KeyMappingRegistry.register(SWITCH_CARRIER);
+        //? if =1.20.1 {
+        /*ClientTooltipEvent.ITEM.register((stack, lines, flag) -> appendBindingTooltip(stack, lines));
+        *///?} else {
+        ClientTooltipEvent.ITEM.register((stack, lines, context, flag) -> appendBindingTooltip(stack, lines));
+        //?}
         ClientTickEvent.CLIENT_POST.register(client -> {
             if (client.player == null) {
                 selectedId = null;
@@ -104,6 +114,20 @@ public final class GenshinecraftClient {
             drawEnergyBar(graphics, selected.data().element(), x + 20, y + 4,
                     client.level == null ? 0L : client.level.getGameTime());
         });
+    }
+
+    private static void appendBindingTooltip(ItemStack stack, List<Component> lines) {
+        if (CarrierItems.isVision(stack)) {
+            lines.add(Component.translatable("tooltip.genshinecraft.vision_style",
+                    Component.translatable("region.genshinecraft.mondstadt"))
+                    .withStyle(ChatFormatting.GRAY));
+        }
+        WeaponBinding binding = WeaponBinding.read(stack);
+        if (binding != null) {
+            lines.add(Component.translatable("tooltip.genshinecraft.weapon_bound",
+                    Component.translatable(binding.carrierNameKey()))
+                    .withStyle(ChatFormatting.AQUA));
+        }
     }
 
     private static int currentIndex(List<CarrierEntry> carriers) {
