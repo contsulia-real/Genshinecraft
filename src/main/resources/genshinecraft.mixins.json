@@ -15,12 +15,19 @@
     "ElementalCrystalPickupMixin",
     "FrozenLivingMovementMixin",
     "FrozenPlayerActionsMixin",
-    "FrozenMobAiMixin"
+    "FrozenMobAiMixin",
+    "PlayerOrganSlotMixin",
+    "MenuSlotAccessMixin",
+    "InventoryOrganSlotMixin",
+    "ServerPlayerOrganRespawnMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
-    "DamageNumberVisibilityMixin"
+    "DamageNumberVisibilityMixin",
+    "FrozenEntityTextureMixin",
+    "InventoryOrganFrameMixin",
+    "InventoryFramePositionAccessor"
   ]
 }

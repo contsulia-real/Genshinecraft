@@ -56,9 +56,10 @@ public final class ElementalBloomCore {
         *///?} else {
         Display.TextDisplay core = new Display.TextDisplay(EntityType.TEXT_DISPLAY, level);
         //?}
-        double x = target.getX() + (level.getRandom().nextDouble() - 0.5) * 0.7;
+        double angle = level.getRandom().nextDouble() * Math.PI * 2;
+        double x = target.getX() + Math.cos(angle);
         double y = target.getY() + 0.22;
-        double z = target.getZ() + (level.getRandom().nextDouble() - 0.5) * 0.7;
+        double z = target.getZ() + Math.sin(angle);
         core.setPos(x, y, z);
         core.setNoGravity(true);
         core.setSilent(true);

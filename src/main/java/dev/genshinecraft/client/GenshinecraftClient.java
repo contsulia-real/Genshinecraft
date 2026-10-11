@@ -197,6 +197,14 @@ public final class GenshinecraftClient {
     }
 
     private static void appendBindingTooltip(ItemStack stack, List<Component> lines) {
+        if (CarrierItems.isCarrier(stack)) {
+            CarrierData organ = CarrierData.read(stack);
+            String name = organ == null || organ.abandoned() || organ.owner() == null
+                    ? "" : organ.ownerName();
+            lines.add(name.isEmpty()
+                    ? Component.translatable("tooltip.genshinecraft.no_owner").withStyle(ChatFormatting.GRAY)
+                    : Component.translatable("tooltip.genshinecraft.owner", name).withStyle(ChatFormatting.GRAY));
+        }
         if (CarrierItems.isVision(stack)) {
             lines.add(Component.translatable("tooltip.genshinecraft.vision_style",
                     Component.translatable("region.genshinecraft.mondstadt"))
@@ -241,7 +249,10 @@ public final class GenshinecraftClient {
                 return customName;
             }
         }
-        return fallback;
+        ItemStack equipped = ((dev.genshinecraft.item.OrganSlotHolder) client.player)
+                .genshinecraft$organSlot().getItem(0);
+        Component equippedName = customNameIfBound(equipped, binding, playerId);
+        return equippedName == null ? fallback : equippedName;
     }
 
     private static Component customNameIfBound(ItemStack stack, WeaponBinding binding, UUID playerId) {
@@ -286,6 +297,12 @@ public final class GenshinecraftClient {
             if (data != null && data.usableBy(ownerId)) {
                 carriers.add(new CarrierEntry(stack, data));
             }
+        }
+        ItemStack equipped = ((dev.genshinecraft.item.OrganSlotHolder) client.player)
+                .genshinecraft$organSlot().getItem(0);
+        CarrierData organ = CarrierData.read(equipped);
+        if (organ != null && organ.usableBy(ownerId)) {
+            carriers.add(new CarrierEntry(equipped, organ));
         }
         return carriers;
     }

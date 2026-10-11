@@ -58,7 +58,7 @@ public record WeaponBinding(UUID carrierId, UUID owner, CarrierData.Element elem
         if (!isWeapon(weapon)) {
             return false;
         }
-        CarrierData.claim(carrier, player.getUUID());
+        CarrierData.claim(carrier, player);
         CarrierData data = CarrierData.read(carrier);
         if (data == null || !data.usableBy(player.getUUID())) {
             return false;
@@ -123,6 +123,12 @@ public record WeaponBinding(UUID carrierId, UUID owner, CarrierData.Element elem
                     && data.element() == binding.element() && data.usableBy(player.getUUID())) {
                 return data;
             }
+        }
+        CarrierData equipped = CarrierData.read(((OrganSlotHolder) player)
+                .genshinecraft$organSlot().getItem(0));
+        if (equipped != null && equipped.id().equals(binding.carrierId())
+                && equipped.element() == binding.element() && equipped.usableBy(player.getUUID())) {
+            return equipped;
         }
         return null;
     }

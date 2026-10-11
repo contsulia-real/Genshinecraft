@@ -17,7 +17,7 @@ import java.util.UUID;
 public record CarrierData(
         UUID id, Element element, String skill, String burst,
         int skillLevel, int burstLevel, int elementalMastery,
-        String statue, UUID owner, boolean abandoned
+        String statue, UUID owner, String ownerName, boolean abandoned
 ) {
     public enum Element {
         ANEMO, GEO, ELECTRO, DENDRO, HYDRO, PYRO, CRYO
@@ -42,10 +42,11 @@ public record CarrierData(
             Codec.INT.fieldOf("elemental_mastery").forGetter(CarrierData::elementalMastery),
             Codec.STRING.fieldOf("statue").forGetter(CarrierData::statue),
             UUIDUtil.STRING_CODEC.optionalFieldOf("owner").forGetter(data -> Optional.ofNullable(data.owner())),
+            Codec.STRING.fieldOf("owner_name").forGetter(CarrierData::ownerName),
             Codec.BOOL.fieldOf("abandoned").forGetter(CarrierData::abandoned)
-    ).apply(instance, (id, element, skill, burst, skillLevel, burstLevel, mastery, statue, owner, abandoned) ->
+    ).apply(instance, (id, element, skill, burst, skillLevel, burstLevel, mastery, statue, owner, ownerName, abandoned) ->
             new CarrierData(id, element, skill, burst, skillLevel, burstLevel, mastery,
-                    statue, owner.orElse(null), abandoned)));
+                    statue, owner.orElse(null), ownerName, abandoned)));
     //?} else {
     /*private static final String PREFIX = "genshinecraft.";
     private static final String ID = PREFIX + "id";
@@ -57,6 +58,7 @@ public record CarrierData(
     private static final String MASTERY = PREFIX + "elemental_mastery";
     private static final String STATUE = PREFIX + "statue";
     private static final String OWNER = PREFIX + "owner";
+    private static final String OWNER_NAME = PREFIX + "owner_name";
     private static final String ABANDONED = PREFIX + "abandoned";
     *///?}
 
@@ -70,7 +72,7 @@ public record CarrierData(
         }
         ItemStack stack = new ItemStack(item);
         write(stack, new CarrierData(UUID.randomUUID(), element, skill, burst,
-                skillLevel, burstLevel, elementalMastery, statue, null, false));
+                skillLevel, burstLevel, elementalMastery, statue, null, "", false));
         return stack;
     }
 
@@ -79,14 +81,15 @@ public record CarrierData(
             return null;
         }
         //? if =1.20.1 {
-        /*CarrierData data = readLegacy(stack);
+        /*CarrierData data = readNbt(stack);
         *///?} else {
         CarrierData data = stack.get(CarrierItems.carrierDataType());
         //?}
         return data != null && CarrierItems.fixedElement(stack.getItem()) == data.element() ? data : null;
     }
 
-    public static boolean claim(ItemStack stack, UUID playerId) {
+    public static boolean claim(ItemStack stack, net.minecraft.world.entity.player.Player player) {
+        UUID playerId = player.getUUID();
         if (!CarrierItems.isCarrier(stack)) {
             return false;
         }
@@ -107,14 +110,14 @@ public record CarrierData(
             if (element == null) {
                 return false;
             }
-            data = new CarrierData(UUID.randomUUID(), element, "", "", 0, 0, 0, "", null, false);
+            data = new CarrierData(UUID.randomUUID(), element, "", "", 0, 0, 0, "", null, "", false);
         }
         if (data.owner() != null || data.abandoned()) {
             return false;
         }
         write(stack, new CarrierData(data.id(), data.element(), data.skill(), data.burst(),
                 data.skillLevel(), data.burstLevel(), data.elementalMastery(),
-                data.statue(), playerId, false));
+                data.statue(), playerId, player.getName().getString(), false));
         return true;
     }
 
@@ -125,7 +128,7 @@ public record CarrierData(
         }
         write(stack, new CarrierData(data.id(), data.element(), data.skill(), data.burst(),
                 data.skillLevel(), data.burstLevel(), data.elementalMastery(),
-                data.statue(), data.owner(), true));
+                data.statue(), data.owner(), data.ownerName(), true));
         return true;
     }
 
@@ -146,8 +149,10 @@ public record CarrierData(
         tag.putString(STATUE, data.statue());
         if (data.owner() != null) {
             tag.putString(OWNER, data.owner().toString());
+            tag.putString(OWNER_NAME, data.ownerName());
         } else {
             tag.remove(OWNER);
+            tag.remove(OWNER_NAME);
         }
         tag.putBoolean(ABANDONED, data.abandoned());
         *///?} else {
@@ -156,7 +161,7 @@ public record CarrierData(
     }
 
     //? if =1.20.1 {
-    /*private static CarrierData readLegacy(ItemStack stack) {
+    /*private static CarrierData readNbt(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(ID) || !tag.contains(ELEMENT)
                 || !tag.contains(SKILL) || !tag.contains(BURST) || !tag.contains(STATUE)) {
@@ -171,6 +176,7 @@ public record CarrierData(
                     tag.getInt(SKILL_LEVEL), tag.getInt(BURST_LEVEL),
                     tag.getInt(MASTERY), tag.getString(STATUE),
                     owner.isEmpty() ? null : UUID.fromString(owner),
+                    tag.getString(OWNER_NAME),
                     tag.getBoolean(ABANDONED)
             );
         } catch (IllegalArgumentException exception) {

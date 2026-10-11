@@ -47,8 +47,10 @@ public final class ElementalCrystals {
                     .ifPresent(ItemEntity::discard);
         }
 
-        ItemEntity crystal = new ItemEntity(level, target.getX(),
-                target.getY() + 0.25, target.getZ(), new ItemStack(item.get()));
+        double angle = level.getRandom().nextDouble() * Math.PI * 2;
+        ItemEntity crystal = new ItemEntity(level, target.getX() + Math.cos(angle),
+                target.getY() + 0.25, target.getZ() + Math.sin(angle),
+                new ItemStack(item.get()));
         crystal.setCustomName(Component.literal(SHARD_TAG));
         crystal.setCustomNameVisible(false);
         crystal.setNoGravity(true);

@@ -24,6 +24,15 @@ public final class ElementalReactionEffects {
     public static void onHit(ServerLevel level, Player attacker, LivingEntity target,
                              Element incoming, String attackGroup) {
         ElementalAuraState state = ((ElementalAuraHolder) target).genshinecraft$auras();
+        // Pyro breaks frozen targets on the first hit and leaves a Pyro aura.
+        if (incoming == Element.PYRO && state.isFrozen()) {
+            state.shatter();
+            target.setTicksFrozen(0);
+            state.consume(Element.CRYO, 16f);
+            state.apply(Element.PYRO, attacker.getUUID());
+            spawnReaction(level, target, "shatter", 14);
+            return;
+        }
         onFrozenAttack(level, target);
         if (!state.recordHit(attacker.getUUID(), incoming, attackGroup, target.tickCount)) {
             return;

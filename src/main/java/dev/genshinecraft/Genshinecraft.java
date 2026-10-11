@@ -33,8 +33,13 @@ public final class Genshinecraft {
             for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
                 var stack = inventory.getItem(slot);
                 if (CarrierItems.isCarrier(stack)) {
-                    CarrierData.claim(stack, player.getUUID());
+                    CarrierData.claim(stack, player);
                 }
+            }
+            ItemStack organ = ((dev.genshinecraft.item.OrganSlotHolder) player)
+                    .genshinecraft$organSlot().getItem(0);
+            if (CarrierItems.isCarrier(organ)) {
+                CarrierData.claim(organ, player);
             }
         });
     }

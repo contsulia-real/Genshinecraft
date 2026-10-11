@@ -231,7 +231,7 @@ public final class ElementalAuraState {
             burningTicks--;
             if (entity.tickCount % 20 == 0) {
                 ElementalReactionEffects.dealDamage(server, entity, CarrierData.Element.PYRO,
-                        burningOwner, 0.35f);
+                        burningOwner, 1.2f);
                 server.sendParticles(ElementalParticles.reaction("burning"),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
                         4, 0.2, 0.3, 0.2, 0.02);
@@ -250,7 +250,7 @@ public final class ElementalAuraState {
             // Server-authoritative immobility; LivingEntity/Mob/Player mixins stop
             // travel, jumps and attacks while this timer is active.
             entity.setDeltaMovement(0, 0, 0);
-            entity.setTicksFrozen(Math.max(entity.getTicksFrozen(), 45));
+            entity.setTicksFrozen(Math.max(entity.getTicksFrozen(), entity.getTicksRequiredToFreeze()));
             if (entity.tickCount % 12 == 0) {
                 server.sendParticles(ElementalParticles.reaction("frozen"),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.65,
