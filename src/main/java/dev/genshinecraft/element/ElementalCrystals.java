@@ -1,88 +1,130 @@
 package dev.genshinecraft.element;
 
 import dev.genshinecraft.item.CarrierData.Element;
-import dev.genshinecraft.item.CarrierItems;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Display;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+//? if >=26.3 {
+/*import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+*///?} else {
+import net.minecraft.nbt.CompoundTag;
+//?}
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Stationary, tagged crystallize drops: at most 3 nearby, lasting 15 seconds. */
-public final class ElementalCrystals {
-    private static final String SHARD_TAG = "genshinecraft:crystallize_shard";
+/** Registered elemental shard entity; never a collectible ItemStack. */
+public final class ElementalCrystals extends Display.TextDisplay {
     private static final int MAX_SHARDS = 3;
     private static final int LIFE_TICKS = 300;
+    private static final String ELEMENT_KEY = "genshinecraft.element";
+    private Element element = Element.PYRO;
 
-    private ElementalCrystals() {
-    }
-
-    public static boolean isShard(ItemEntity entity) {
-        return entity.getCustomName() != null
-                && SHARD_TAG.equals(entity.getCustomName().getString());
+    public ElementalCrystals(EntityType<? extends ElementalCrystals> type, Level level) {
+        super(type, level);
     }
 
     public static void drop(ServerLevel level, LivingEntity target, Element element) {
-        var item = CarrierItems.CRYSTAL_SHARDS.get(element);
-        if (item == null) {
+        if (element != Element.PYRO && element != Element.HYDRO
+                && element != Element.ELECTRO && element != Element.CRYO) {
             return;
         }
-        List<ItemEntity> nearby = new java.util.ArrayList<>();
+        List<ElementalCrystals> existing = new ArrayList<>();
         for (var entity : level.getAllEntities()) {
-            if (entity instanceof ItemEntity itemEntity && isShard(itemEntity)) {
-                nearby.add(itemEntity);
+            if (entity instanceof ElementalCrystals shard) {
+                existing.add(shard);
             }
         }
-        // Strict cap of 3: immediately retire the oldest instead of leaving surplus
-        // shards around for the approximately 2-second Wiki cleanup window.
-        if (nearby.size() >= MAX_SHARDS) {
-            nearby.stream().max(Comparator.comparingInt(e -> e.tickCount))
-                    .ifPresent(ItemEntity::discard);
+        if (existing.size() >= MAX_SHARDS) {
+            existing.stream().max(Comparator.comparingInt(e -> e.tickCount))
+                    .ifPresent(ElementalCrystals::discard);
         }
 
+        ElementalCrystals shard = new ElementalCrystals(ElementalEntities.CRYSTAL_SHARD.get(), level);
+        shard.element = element;
         double angle = level.getRandom().nextDouble() * Math.PI * 2;
-        ItemEntity crystal = new ItemEntity(level, target.getX() + Math.cos(angle),
-                target.getY() + 0.25, target.getZ() + Math.sin(angle),
-                new ItemStack(item.get()));
-        crystal.setCustomName(Component.literal(SHARD_TAG));
-        crystal.setCustomNameVisible(false);
-        crystal.setNoGravity(true);
-        crystal.setDeltaMovement(Vec3.ZERO);
-        crystal.setPickUpDelay(10);
-        level.addFreshEntity(crystal);
+        shard.setPos(target.getX() + Math.cos(angle), target.getY() + 0.25,
+                target.getZ() + Math.sin(angle));
+        shard.setNoGravity(true);
+        shard.setSilent(true);
+        shard.setDeltaMovement(Vec3.ZERO);
+        shard.updateAppearance();
+        level.addFreshEntity(shard);
     }
 
-    public static void tick(ItemEntity entity) {
-        if (!isShard(entity) || !(entity.level() instanceof ServerLevel)) {
+    private void updateAppearance() {
+        char symbol = switch (element) {
+            case PYRO -> '\uE001';
+            case HYDRO -> '\uE002';
+            case ELECTRO -> '\uE003';
+            case CRYO -> '\uE004';
+            default -> '\uE001';
+        };
+        ElementalDisplaySprites.apply(this, symbol);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!(level() instanceof ServerLevel level)) {
             return;
         }
-        entity.setNoGravity(true);
-        entity.setDeltaMovement(Vec3.ZERO);
-        if (entity.tickCount >= LIFE_TICKS) {
-            entity.discard();
+        setDeltaMovement(Vec3.ZERO);
+        if (tickCount >= LIFE_TICKS) {
+            discard();
+            return;
+        }
+        if (tickCount < 10) {
+            return;
+        }
+        for (Player player : level.getEntitiesOfClass(Player.class,
+                getBoundingBox().inflate(0.65), p -> p.isAlive() && !p.isSpectator())) {
+            player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 300, 0, false, true));
+            discard();
+            break;
         }
     }
 
-    /** Crystallize shards shield on pickup; ordinary copies of the item do not. */
-    public static boolean pickup(ItemEntity item, Player player) {
-        if (!(player.level() instanceof ServerLevel) || !isShard(item) || item.tickCount < 10) {
-            return false;
+    private void restoreElement(String saved) {
+        try {
+            element = Element.valueOf(saved);
+        } catch (IllegalArgumentException exception) {
+            element = Element.PYRO;
         }
-        for (var registered : CarrierItems.CRYSTAL_SHARDS.values()) {
-            if (item.getItem().is(registered.get())) {
-                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
-                        300, 0, false, true));
-                item.discard();
-                return true;
-            }
-        }
-        return false;
+        updateAppearance();
     }
+
+    //? if >=26.3 {
+    /*@Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putString(ELEMENT_KEY, element.name());
+    }
+
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        restoreElement(input.getStringOr(ELEMENT_KEY, "PYRO"));
+    }
+    *///?} else {
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putString(ELEMENT_KEY, element.name());
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        restoreElement(tag.getString(ELEMENT_KEY));
+    }
+    //?}
 }

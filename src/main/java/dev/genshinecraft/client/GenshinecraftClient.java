@@ -2,6 +2,11 @@ package dev.genshinecraft.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.event.EventResult;
+import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
+import dev.genshinecraft.element.ElementalEntities;
+import net.minecraft.client.renderer.entity.DisplayRenderer;
+import net.minecraft.world.entity.Display;
+import net.minecraft.world.entity.EntityType;
 import dev.architectury.event.events.client.ClientScreenInputEvent;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
@@ -62,8 +67,17 @@ public final class GenshinecraftClient {
     private GenshinecraftClient() {
     }
 
+    @SuppressWarnings("unchecked")
+    private static EntityType<Display.TextDisplay> displayType(EntityType<?> type) {
+        return (EntityType<Display.TextDisplay>) type;
+    }
+
     public static void init() {
         DamageNumberSettings.load();
+        EntityRendererRegistry.register(() -> displayType(ElementalEntities.DENDRO_CORE.get()),
+                context -> new DisplayRenderer.TextDisplayRenderer(context) {});
+        EntityRendererRegistry.register(() -> displayType(ElementalEntities.CRYSTAL_SHARD.get()),
+                context -> new DisplayRenderer.TextDisplayRenderer(context) {});
         KeyMappingRegistry.register(SWITCH_CARRIER);
         // The creative inventory's item-picker tabs bypass vanilla server-side slot
         // clicks. Intercept only clicks on real player inventory/hotbar slots.

@@ -1,112 +1,94 @@
 package dev.genshinecraft.element;
 
-import com.mojang.math.Transformation;
 import dev.genshinecraft.combat.ElementalCombat;
 import dev.genshinecraft.item.CarrierData.Element;
-import dev.genshinecraft.mixin.DamageNumberDisplayAccessor;
-import dev.genshinecraft.mixin.DamageNumberTextAccessor;
 import dev.genshinecraft.particle.ElementalParticles;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
+//? if >=26.3 {
+/*import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+*///?} else {
+import net.minecraft.nbt.CompoundTag;
+//?}
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * An independent, persisted display entity standing in for a Dendro Core.
- * 6-second Bloom expiry; nearby Pyro/Electro hits can react with it.
- * Not yet a directly targetable projectile entity.
- */
-public final class ElementalBloomCore {
-    private static final String PREFIX = "genshinecraft:bloom_core:";
-    private static final int MAX_NEARBY = 5;
-    private static final int CORE_LIFETIME = 120;
+/** Registered Dendro Core entity. Its visual is a sprouting seed, not vanilla text. */
+public final class ElementalBloomCore extends Display.TextDisplay {
+    private static final int MAX_CORES = 5;
+    private static final int LIFE_TICKS = 120;
+    private static final String OWNER_KEY = "genshinecraft.owner";
+    private UUID owner;
 
-    private ElementalBloomCore() {
-    }
-
-    public static boolean isCore(Display display) {
-        return display instanceof Display.TextDisplay && display.getCustomName() != null
-                && display.getCustomName().getString().startsWith(PREFIX);
+    public ElementalBloomCore(EntityType<? extends ElementalBloomCore> type, Level level) {
+        super(type, level);
     }
 
     public static void spawn(ServerLevel level, LivingEntity target, Player owner) {
-        List<Display.TextDisplay> nearby = new java.util.ArrayList<>();
+        List<ElementalBloomCore> existing = new ArrayList<>();
         for (var entity : level.getAllEntities()) {
-            if (entity instanceof Display.TextDisplay display && isCore(display)) {
-                nearby.add(display);
+            if (entity instanceof ElementalBloomCore core) {
+                existing.add(core);
             }
         }
-        if (nearby.size() >= MAX_NEARBY) {
-            // Entity queries have no defined ordering; expire the oldest core.
-            Display.TextDisplay oldest = nearby.stream()
-                    .max(java.util.Comparator.comparingInt(core -> core.tickCount))
-                    .orElseThrow();
-            detonate(level, oldest, 2.0f, 2.5, "bloom");
+        if (existing.size() >= MAX_CORES) {
+            existing.stream().max(Comparator.comparingInt(core -> core.tickCount))
+                    .ifPresent(core -> detonate(level, core, 2f, 2.5, "bloom"));
         }
-        //? if >=26.3 {
-        /*Display.TextDisplay core = new Display.TextDisplay(net.minecraft.world.entity.EntityTypes.TEXT_DISPLAY, level);
-        *///?} else {
-        Display.TextDisplay core = new Display.TextDisplay(EntityType.TEXT_DISPLAY, level);
-        //?}
+        ElementalBloomCore core = new ElementalBloomCore(ElementalEntities.DENDRO_CORE.get(), level);
+        core.owner = owner.getUUID();
         double angle = level.getRandom().nextDouble() * Math.PI * 2;
-        double x = target.getX() + Math.cos(angle);
-        double y = target.getY() + 0.22;
-        double z = target.getZ() + Math.sin(angle);
-        core.setPos(x, y, z);
+        core.setPos(target.getX() + Math.cos(angle), target.getY() + 0.22,
+                target.getZ() + Math.sin(angle));
         core.setNoGravity(true);
         core.setSilent(true);
-        core.setCustomName(Component.literal(PREFIX + owner.getUUID()));
-        core.setCustomNameVisible(false);
-        ((DamageNumberTextAccessor) core).genshinecraft$text(Component.literal("✦")
-                .withStyle(style -> style.withColor(0xB4E967)));
-        ((DamageNumberTextAccessor) core).genshinecraft$background(0);
-        ((DamageNumberDisplayAccessor) core).genshinecraft$billboard(Display.BillboardConstraints.CENTER);
-        ((DamageNumberDisplayAccessor) core).genshinecraft$transformation(
-                new Transformation(new Vector3f(), new Quaternionf(),
-                        new Vector3f(1.10f, 1.10f, 1.10f), new Quaternionf()));
+        ElementalDisplaySprites.apply(core, '\uE000');
         level.addFreshEntity(core);
-        particles(level, x, y, z, 5, "bloom");
+        particles(level, core.getX(), core.getY(), core.getZ(), 5, "bloom");
     }
 
-    public static void tick(Display display) {
-        if (!(display.level() instanceof ServerLevel level) || !isCore(display)) {
+    @Override
+    public void tick() {
+        super.tick();
+        if (!(level() instanceof ServerLevel server)) {
             return;
         }
-        if (display.tickCount % 12 == 0) {
-            particles(level, display.getX(), display.getY(), display.getZ(), 2, "bloom");
+        if (tickCount % 12 == 0) {
+            particles(server, getX(), getY(), getZ(), 2, "bloom");
         }
-        if (display.tickCount >= CORE_LIFETIME) {
-            detonate(level, (Display.TextDisplay) display, 2f, 2.5, "bloom");
+        if (tickCount >= LIFE_TICKS) {
+            detonate(server, this, 2f, 2.5, "bloom");
         }
     }
 
-    /** Fire explodes the core; Electro hits the closest other living entity. */
+    /** Fire detonates the nearest core; Electro launches its Hyperbloom damage. */
     public static boolean trigger(ServerLevel level, LivingEntity hit, Element incoming) {
         if (incoming != Element.PYRO && incoming != Element.ELECTRO) {
             return false;
         }
-        List<Display.TextDisplay> nearby = cores(level, hit.getBoundingBox().inflate(2.8));
-        if (nearby.isEmpty()) {
+        List<ElementalBloomCore> cores = level.getEntitiesOfClass(ElementalBloomCore.class,
+                hit.getBoundingBox().inflate(2.8));
+        if (cores.isEmpty()) {
             return false;
         }
-        Display.TextDisplay core = nearby.get(0);
+        ElementalBloomCore core = cores.get(0);
         if (incoming == Element.PYRO) {
             detonate(level, core, 4f, 3.0, "burgeon");
         } else {
-            UUID owner = owner(core);
             LivingEntity selected = hit;
             double nearest = Double.MAX_VALUE;
             for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
-                    core.getBoundingBox().inflate(5.0), e -> e.isAlive())) {
-                if (other.getUUID().equals(owner)) {
+                    core.getBoundingBox().inflate(5.0), LivingEntity::isAlive)) {
+                if (other.getUUID().equals(core.owner)) {
                     continue;
                 }
                 double distance = other.distanceToSqr(core);
@@ -115,7 +97,7 @@ public final class ElementalBloomCore {
                     selected = other;
                 }
             }
-            ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, owner, 4f);
+            ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, core.owner, 4f);
             level.sendParticles(ElementalParticles.reaction("hyperbloom"),
                     selected.getX(), selected.getY() + selected.getBbHeight() * 0.6,
                     selected.getZ(), 12, 0.25, 0.3, 0.25, 0.08);
@@ -124,31 +106,13 @@ public final class ElementalBloomCore {
         return true;
     }
 
-    private static List<Display.TextDisplay> cores(ServerLevel level, AABB range) {
-        return level.getEntitiesOfClass(Display.TextDisplay.class, range, ElementalBloomCore::isCore);
-    }
-
-    private static UUID owner(Display core) {
-        if (core.getCustomName() != null) {
-            try {
-                return UUID.fromString(core.getCustomName().getString().substring(PREFIX.length()));
-            } catch (IllegalArgumentException ignored) {
-                // A malformed persisted marker does not crash the entity tick.
-            }
-        }
-        return null;
-    }
-
-    private static void detonate(ServerLevel level, Display.TextDisplay core,
+    private static void detonate(ServerLevel level, ElementalBloomCore core,
                                  float damage, double radius, String effect) {
-        UUID source = owner(core);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                core.getBoundingBox().inflate(radius), e -> e.isAlive())) {
-            // Owner is immune to the mod's Bloom splash; separate target if PvP desired.
-            if (target.getUUID().equals(source)) {
-                continue;
+                core.getBoundingBox().inflate(radius), LivingEntity::isAlive)) {
+            if (!target.getUUID().equals(core.owner)) {
+                ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, core.owner, damage);
             }
-            ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, source, damage);
         }
         particles(level, core.getX(), core.getY(), core.getZ(), 14, effect);
         core.discard();
@@ -159,4 +123,45 @@ public final class ElementalBloomCore {
         level.sendParticles(ElementalParticles.reaction(effect),
                 x, y, z, count, 0.25, 0.2, 0.25, 0.04);
     }
+
+    private void restoreOwner(String saved) {
+        owner = null;
+        if (!saved.isEmpty()) {
+            try {
+                owner = UUID.fromString(saved);
+            } catch (IllegalArgumentException ignored) {
+                // A corrupt owner ID must not prevent a world from loading.
+            }
+        }
+    }
+
+    //? if >=26.3 {
+    /*@Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        if (owner != null) {
+            output.putString(OWNER_KEY, owner.toString());
+        }
+    }
+
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        restoreOwner(input.getStringOr(OWNER_KEY, ""));
+    }
+    *///?} else {
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        if (owner != null) {
+            tag.putString(OWNER_KEY, owner.toString());
+        }
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        restoreOwner(tag.getString(OWNER_KEY));
+    }
+    //?}
 }

@@ -4,6 +4,7 @@ import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.utils.Env;
 import dev.architectury.utils.EnvExecutor;
 import dev.genshinecraft.client.GenshinecraftClient;
+import dev.genshinecraft.element.ElementalEntities;
 import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.CarrierItems;
 import dev.genshinecraft.item.WeaponBinding;
@@ -20,6 +21,7 @@ public final class Genshinecraft {
 
     public static void init() {
         CarrierItems.init();
+        ElementalEntities.init();
         ElementalParticles.init();
         EnvExecutor.runInEnv(Env.CLIENT, () -> GenshinecraftClient::init);
         TickEvent.PLAYER_POST.register(player -> {

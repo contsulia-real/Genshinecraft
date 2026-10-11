@@ -12,7 +12,6 @@
     "DamageNumberTextAccessor",
     "DamageNumberLifetimeMixin",
     "ServerPlayerCritMixin",
-    "ElementalCrystalPickupMixin",
     "FrozenLivingMovementMixin",
     "FrozenPlayerActionsMixin",
     "FrozenMobAiMixin",
