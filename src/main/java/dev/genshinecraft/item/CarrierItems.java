@@ -5,6 +5,10 @@ import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import dev.genshinecraft.Genshinecraft;
 import net.minecraft.core.registries.Registries;
+//? if >=1.21.1 {
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.network.codec.ByteBufCodecs;
+//?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
@@ -20,6 +24,14 @@ import java.util.Map;
 public final class CarrierItems {
     private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Genshinecraft.MOD_ID, Registries.ITEM);
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Genshinecraft.MOD_ID, Registries.CREATIVE_MODE_TAB);
+    //? if >=1.21.1 {
+    private static final DeferredRegister<DataComponentType<?>> COMPONENTS = DeferredRegister.create(Genshinecraft.MOD_ID, Registries.DATA_COMPONENT_TYPE);
+    private static final RegistrySupplier<DataComponentType<?>> CARRIER_DATA = COMPONENTS.register("carrier_data", () ->
+            DataComponentType.<CarrierData>builder()
+                    .persistent(CarrierData.CODEC)
+                    .networkSynchronized(ByteBufCodecs.fromCodec(CarrierData.CODEC))
+                    .build());
+    //?}
 
     public static final Map<CarrierData.Element, RegistrySupplier<Item>> VISIONS = registerElements("vision");
     public static final Map<CarrierData.Element, RegistrySupplier<Item>> MOON_WHEELS = registerElements("moon_wheel");
@@ -70,7 +82,17 @@ public final class CarrierItems {
         return item instanceof ElementCarrierItem carrier ? carrier.element : null;
     }
 
+    //? if >=1.21.1 {
+    @SuppressWarnings("unchecked")
+    public static DataComponentType<CarrierData> carrierDataType() {
+        return (DataComponentType<CarrierData>) CARRIER_DATA.get();
+    }
+    //?}
+
     public static void init() {
+        //? if >=1.21.1 {
+        COMPONENTS.register();
+        //?}
         ITEMS.register();
         TABS.register();
     }

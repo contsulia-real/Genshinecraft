@@ -1,13 +1,17 @@
 package dev.genshinecraft.item;
 
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-//? if >=1.21.1 {
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.CustomData;
+//? if =1.20.1 {
+/*import net.minecraft.nbt.CompoundTag;
+*///?} else {
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.UUIDUtil;
 //?}
 
+import java.util.Optional;
 import java.util.UUID;
 
 public record CarrierData(
@@ -19,7 +23,31 @@ public record CarrierData(
         ANEMO, GEO, ELECTRO, DENDRO, HYDRO, PYRO, CRYO
     }
 
-    private static final String PREFIX = "genshinecraft.";
+    //? if >=1.21.1 {
+    private static final Codec<Element> ELEMENT_CODEC = Codec.STRING.comapFlatMap(value -> {
+        try {
+            return DataResult.success(Element.valueOf(value));
+        } catch (IllegalArgumentException exception) {
+            return DataResult.error(() -> "Unknown elemental carrier element: " + value);
+        }
+    }, Element::name);
+
+    public static final Codec<CarrierData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            UUIDUtil.STRING_CODEC.fieldOf("id").forGetter(CarrierData::id),
+            ELEMENT_CODEC.fieldOf("element").forGetter(CarrierData::element),
+            Codec.STRING.fieldOf("skill").forGetter(CarrierData::skill),
+            Codec.STRING.fieldOf("burst").forGetter(CarrierData::burst),
+            Codec.INT.fieldOf("skill_level").forGetter(CarrierData::skillLevel),
+            Codec.INT.fieldOf("burst_level").forGetter(CarrierData::burstLevel),
+            Codec.INT.fieldOf("elemental_mastery").forGetter(CarrierData::elementalMastery),
+            Codec.STRING.fieldOf("statue").forGetter(CarrierData::statue),
+            UUIDUtil.STRING_CODEC.optionalFieldOf("owner").forGetter(data -> Optional.ofNullable(data.owner())),
+            Codec.BOOL.fieldOf("abandoned").forGetter(CarrierData::abandoned)
+    ).apply(instance, (id, element, skill, burst, skillLevel, burstLevel, mastery, statue, owner, abandoned) ->
+            new CarrierData(id, element, skill, burst, skillLevel, burstLevel, mastery,
+                    statue, owner.orElse(null), abandoned)));
+    //?} else {
+    /*private static final String PREFIX = "genshinecraft.";
     private static final String ID = PREFIX + "id";
     private static final String ELEMENT = PREFIX + "element";
     private static final String SKILL = PREFIX + "skill";
@@ -30,6 +58,7 @@ public record CarrierData(
     private static final String STATUE = PREFIX + "statue";
     private static final String OWNER = PREFIX + "owner";
     private static final String ABANDONED = PREFIX + "abandoned";
+    *///?}
 
     public static ItemStack create(Item item, Element element, String skill, String burst,
                                    int skillLevel, int burstLevel, int elementalMastery, String statue) {
@@ -40,16 +69,8 @@ public record CarrierData(
             throw new IllegalArgumentException("Invalid carrier data");
         }
         ItemStack stack = new ItemStack(item);
-        CompoundTag tag = readTag(stack);
-        tag.putString(ID, UUID.randomUUID().toString());
-        tag.putString(ELEMENT, element.name());
-        tag.putString(SKILL, skill);
-        tag.putString(BURST, burst);
-        tag.putInt(SKILL_LEVEL, skillLevel);
-        tag.putInt(BURST_LEVEL, burstLevel);
-        tag.putInt(MASTERY, elementalMastery);
-        tag.putString(STATUE, statue);
-        saveTag(stack, tag);
+        write(stack, new CarrierData(UUID.randomUUID(), element, skill, burst,
+                skillLevel, burstLevel, elementalMastery, statue, null, false));
         return stack;
     }
 
@@ -57,66 +78,54 @@ public record CarrierData(
         if (!CarrierItems.isCarrier(stack)) {
             return null;
         }
-        CompoundTag tag = readTag(stack);
-        if (!tag.contains(ID) || !tag.contains(ELEMENT) || !tag.contains(SKILL)
-                || !tag.contains(BURST) || !tag.contains(STATUE)) {
-            return null;
-        }
-        try {
-            String owner = string(tag, OWNER);
-            CarrierData parsed = new CarrierData(
-                    UUID.fromString(string(tag, ID)),
-                    Element.valueOf(string(tag, ELEMENT)),
-                    string(tag, SKILL), string(tag, BURST),
-                    integer(tag, SKILL_LEVEL), integer(tag, BURST_LEVEL),
-                    integer(tag, MASTERY), string(tag, STATUE),
-                    owner.isEmpty() ? null : UUID.fromString(owner),
-                    bool(tag, ABANDONED)
-            );
-            Element fixed = CarrierItems.fixedElement(stack.getItem());
-            return fixed == parsed.element ? parsed : null;
-        } catch (IllegalArgumentException exception) {
-            return null;
-        }
+        //? if =1.20.1 {
+        /*CarrierData data = readLegacy(stack);
+        *///?} else {
+        CarrierData data = stack.get(CarrierItems.carrierDataType());
+        //?}
+        return data != null && CarrierItems.fixedElement(stack.getItem()) == data.element() ? data : null;
     }
 
     public static boolean claim(ItemStack stack, UUID playerId) {
         if (!CarrierItems.isCarrier(stack)) {
             return false;
         }
-        CompoundTag tag = readTag(stack);
-        if (tag.contains(OWNER) || bool(tag, ABANDONED)) {
-            return false;
-        }
-        if (read(stack) == null) {
-            // Only new element-specific items receive initial data automatically.
-            // Unassigned skills/energy stay unavailable until the skill system exists.
-            Element fixed = CarrierItems.fixedElement(stack.getItem());
-            if (tag.contains(ID) || fixed == null) {
+        CarrierData data = read(stack);
+        if (data == null) {
+            // Refuse corrupted or mismatched existing data instead of resetting ownership.
+            //? if =1.20.1 {
+            /*CompoundTag tag = stack.getTag();
+            if (tag != null && tag.contains(ID)) {
                 return false;
             }
-            tag.putString(ID, UUID.randomUUID().toString());
-            tag.putString(ELEMENT, fixed.name());
-            tag.putString(SKILL, "");
-            tag.putString(BURST, "");
-            tag.putInt(SKILL_LEVEL, 0);
-            tag.putInt(BURST_LEVEL, 0);
-            tag.putInt(MASTERY, 0);
-            tag.putString(STATUE, "");
+            *///?} else {
+            if (stack.get(CarrierItems.carrierDataType()) != null) {
+                return false;
+            }
+            //?}
+            Element element = CarrierItems.fixedElement(stack.getItem());
+            if (element == null) {
+                return false;
+            }
+            data = new CarrierData(UUID.randomUUID(), element, "", "", 0, 0, 0, "", null, false);
         }
-        tag.putString(OWNER, playerId.toString());
-        saveTag(stack, tag);
+        if (data.owner() != null || data.abandoned()) {
+            return false;
+        }
+        write(stack, new CarrierData(data.id(), data.element(), data.skill(), data.burst(),
+                data.skillLevel(), data.burstLevel(), data.elementalMastery(),
+                data.statue(), playerId, false));
         return true;
     }
 
     public static boolean abandon(ItemStack stack, UUID playerId) {
         CarrierData data = read(stack);
-        if (data == null || data.abandoned || !playerId.equals(data.owner)) {
+        if (data == null || data.abandoned() || !playerId.equals(data.owner())) {
             return false;
         }
-        CompoundTag tag = readTag(stack);
-        tag.putBoolean(ABANDONED, true);
-        saveTag(stack, tag);
+        write(stack, new CarrierData(data.id(), data.element(), data.skill(), data.burst(),
+                data.skillLevel(), data.burstLevel(), data.elementalMastery(),
+                data.statue(), data.owner(), true));
         return true;
     }
 
@@ -124,42 +133,49 @@ public record CarrierData(
         return !abandoned && playerId.equals(owner);
     }
 
-    private static CompoundTag readTag(ItemStack stack) {
+    private static void write(ItemStack stack, CarrierData data) {
         //? if =1.20.1 {
-        /*return stack.getOrCreateTag();
+        /*CompoundTag tag = stack.getOrCreateTag();
+        tag.putString(ID, data.id().toString());
+        tag.putString(ELEMENT, data.element().name());
+        tag.putString(SKILL, data.skill());
+        tag.putString(BURST, data.burst());
+        tag.putInt(SKILL_LEVEL, data.skillLevel());
+        tag.putInt(BURST_LEVEL, data.burstLevel());
+        tag.putInt(MASTERY, data.elementalMastery());
+        tag.putString(STATUE, data.statue());
+        if (data.owner() != null) {
+            tag.putString(OWNER, data.owner().toString());
+        } else {
+            tag.remove(OWNER);
+        }
+        tag.putBoolean(ABANDONED, data.abandoned());
         *///?} else {
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        return data == null ? new CompoundTag() : data.copyTag();
+        stack.set(CarrierItems.carrierDataType(), data);
         //?}
     }
 
-    private static void saveTag(ItemStack stack, CompoundTag tag) {
-        //? if >=1.21.1 {
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-        //?}
+    //? if =1.20.1 {
+    /*private static CarrierData readLegacy(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(ID) || !tag.contains(ELEMENT)
+                || !tag.contains(SKILL) || !tag.contains(BURST) || !tag.contains(STATUE)) {
+            return null;
+        }
+        try {
+            String owner = tag.getString(OWNER);
+            return new CarrierData(
+                    UUID.fromString(tag.getString(ID)),
+                    Element.valueOf(tag.getString(ELEMENT)),
+                    tag.getString(SKILL), tag.getString(BURST),
+                    tag.getInt(SKILL_LEVEL), tag.getInt(BURST_LEVEL),
+                    tag.getInt(MASTERY), tag.getString(STATUE),
+                    owner.isEmpty() ? null : UUID.fromString(owner),
+                    tag.getBoolean(ABANDONED)
+            );
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
-
-    private static String string(CompoundTag tag, String key) {
-        //? if >=26.3 {
-        /*return tag.getStringOr(key, "");
-        *///?} else {
-        return tag.getString(key);
-        //?}
-    }
-
-    private static int integer(CompoundTag tag, String key) {
-        //? if >=26.3 {
-        /*return tag.getIntOr(key, 0);
-        *///?} else {
-        return tag.getInt(key);
-        //?}
-    }
-
-    private static boolean bool(CompoundTag tag, String key) {
-        //? if >=26.3 {
-        /*return tag.getBooleanOr(key, false);
-        *///?} else {
-        return tag.getBoolean(key);
-        //?}
-    }
+    *///?}
 }
