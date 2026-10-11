@@ -27,5 +27,10 @@ public final class GenshinecraftForgeParticles {
                     (type, level, x, y, z, vx, vy, vz) ->
                             new ElementalAuraParticle(level, x, y, z, vx, vy, vz, sprites));
         }
+        for (var particleType : ElementalParticles.EMBLEMS.values()) {
+            event.registerSpriteSet(particleType.get(), sprites ->
+                    (type, level, x, y, z, vx, vy, vz) ->
+                            new ElementalAuraParticle(level, x, y, z, vx, vy, vz, sprites, true));
+        }
     }
 }

@@ -17,19 +17,27 @@ public final class ElementalAuraParticle
         extends TextureSheetParticle {
         //?}
     private final SpriteSet sprites;
+    private final boolean emblem;
 
     public ElementalAuraParticle(ClientLevel level, double x, double y, double z,
                                  double vx, double vy, double vz, SpriteSet sprites) {
+        this(level, x, y, z, vx, vy, vz, sprites, false);
+    }
+
+    public ElementalAuraParticle(ClientLevel level, double x, double y, double z,
+                                 double vx, double vy, double vz, SpriteSet sprites, boolean emblem) {
         //? if >=26.3 {
         /*super(level, x, y, z, vx, vy, vz, sprites.first());
         *///?} else {
         super(level, x, y, z, vx, vy, vz);
         //?}
         this.sprites = sprites;
-        this.lifetime = 18 + random.nextInt(11);
-        this.quadSize = 0.075f + random.nextFloat() * 0.045f;
+        this.emblem = emblem;
+        this.lifetime = emblem ? 26 + random.nextInt(9) : 18 + random.nextInt(11);
+        this.quadSize = emblem ? 0.20f + random.nextFloat() * 0.07f
+                : 0.12f + random.nextFloat() * 0.06f;
         this.xd = vx * 0.4;
-        this.yd = 0.012 + Math.abs(vy) * 0.3;
+        this.yd = (emblem ? 0.004 : 0.012) + Math.abs(vy) * 0.3;
         this.zd = vz * 0.4;
         this.gravity = 0f;
         this.friction = 0.92f;
@@ -46,7 +54,9 @@ public final class ElementalAuraParticle
         super.tick();
         if (!removed) {
             setSpriteFromAge(sprites);
-            setAlpha(Math.max(0f, 0.72f * (1f - (float) age / (float) lifetime)));
+            // Preserve the supplied texture's strong color. Fade only during the last third.
+            float fade = Math.min(1f, (lifetime - age) / (lifetime * 0.33f));
+            setAlpha(Math.max(0f, 0.98f * fade));
         }
     }
 

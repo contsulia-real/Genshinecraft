@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:element/dendro_0",
     "genshinecraft:element/dendro_1",
-    "genshinecraft:element/dendro_2"
+    "genshinecraft:element/dendro_2",
+    "genshinecraft:element/dendro_3",
+    "genshinecraft:element/dendro_4",
+    "genshinecraft:element/dendro_5",
+    "genshinecraft:element/dendro_6",
+    "genshinecraft:element/dendro_7"
   ]
 }

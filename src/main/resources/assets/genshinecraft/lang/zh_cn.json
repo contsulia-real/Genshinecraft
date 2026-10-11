@@ -40,5 +40,13 @@
   "death.attack.genshinecraft.element_dendro_attack": "%1$s 被 %2$s 的草元素攻击击败",
   "death.attack.genshinecraft.element_hydro_attack": "%1$s 被 %2$s 的水元素攻击击败",
   "death.attack.genshinecraft.element_pyro_attack": "%1$s 被 %2$s 的火元素攻击击败",
-  "death.attack.genshinecraft.element_cryo_attack": "%1$s 被 %2$s 的冰元素攻击击败"
+  "death.attack.genshinecraft.element_cryo_attack": "%1$s 被 %2$s 的冰元素攻击击败",
+  "item.genshinecraft.anemo_sigil": "风之印",
+  "item.genshinecraft.geo_sigil": "岩之印",
+  "item.genshinecraft.electro_sigil": "雷之印",
+  "item.genshinecraft.dendro_sigil": "草之印",
+  "item.genshinecraft.hydro_sigil": "水之印",
+  "item.genshinecraft.pyro_sigil": "火之印",
+  "item.genshinecraft.cryo_sigil": "冰之印",
+  "item.genshinecraft.moon_sigil": "月之印"
 }

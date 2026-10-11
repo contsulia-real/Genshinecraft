@@ -43,5 +43,16 @@ public final class GenshinecraftNeoForgeParticles {
                             new ElementalAuraParticle(level, x, y, z, vx, vy, vz, sprites));
             //?}
         }
+        for (var particleType : ElementalParticles.EMBLEMS.values()) {
+            //? if >=26.3 {
+            /*event.registerSpriteSet(particleType.get(), sprites ->
+                    (type, level, x, y, z, vx, vy, vz, random) ->
+                            new ElementalAuraParticle(level, x, y, z, vx, vy, vz, sprites, true));
+            *///?} else {
+            event.registerSpriteSet(particleType.get(), sprites ->
+                    (type, level, x, y, z, vx, vy, vz) ->
+                            new ElementalAuraParticle(level, x, y, z, vx, vy, vz, sprites, true));
+            //?}
+        }
     }
 }

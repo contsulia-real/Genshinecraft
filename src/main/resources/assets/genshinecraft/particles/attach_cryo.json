@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:aura/attach_cryo_0",
     "genshinecraft:aura/attach_cryo_1",
-    "genshinecraft:aura/attach_cryo_2"
+    "genshinecraft:aura/attach_cryo_2",
+    "genshinecraft:aura/attach_cryo_3",
+    "genshinecraft:aura/attach_cryo_4",
+    "genshinecraft:aura/attach_cryo_5",
+    "genshinecraft:aura/attach_cryo_6",
+    "genshinecraft:aura/attach_cryo_7"
   ]
 }

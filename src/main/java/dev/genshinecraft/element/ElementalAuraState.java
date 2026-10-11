@@ -66,11 +66,17 @@ public final class ElementalAuraState {
             }
             active.setValue(new Aura(gauge, remaining, old.applier()));
             if (entity.tickCount % PARTICLE_INTERVAL == 0) {
-                // Gentle, continuous motes, not the existing eight-particle hit burst.
+                // Animated orbs orbit the torso; elemental emblems remain legible.
                 server.sendParticles(ElementalParticles.AURAS.get(active.getKey()).get(),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.65, entity.getZ(),
                         2, entity.getBbWidth() * 0.55 + 0.10,
                         entity.getBbHeight() * 0.20, entity.getBbWidth() * 0.55 + 0.10, 0.008);
+            }
+            if (entity.tickCount % (PARTICLE_INTERVAL * 2) == 0) {
+                server.sendParticles(ElementalParticles.EMBLEMS.get(active.getKey()).get(),
+                        entity.getX(), entity.getY() + entity.getBbHeight() * 0.78, entity.getZ(),
+                        1, entity.getBbWidth() * 0.4 + 0.06,
+                        entity.getBbHeight() * 0.10, entity.getBbWidth() * 0.4 + 0.06, 0.003);
             }
         }
     }

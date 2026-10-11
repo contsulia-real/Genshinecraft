@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:element/anemo_0",
     "genshinecraft:element/anemo_1",
-    "genshinecraft:element/anemo_2"
+    "genshinecraft:element/anemo_2",
+    "genshinecraft:element/anemo_3",
+    "genshinecraft:element/anemo_4",
+    "genshinecraft:element/anemo_5",
+    "genshinecraft:element/anemo_6",
+    "genshinecraft:element/anemo_7"
   ]
 }

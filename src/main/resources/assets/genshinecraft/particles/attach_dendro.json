@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:aura/attach_dendro_0",
     "genshinecraft:aura/attach_dendro_1",
-    "genshinecraft:aura/attach_dendro_2"
+    "genshinecraft:aura/attach_dendro_2",
+    "genshinecraft:aura/attach_dendro_3",
+    "genshinecraft:aura/attach_dendro_4",
+    "genshinecraft:aura/attach_dendro_5",
+    "genshinecraft:aura/attach_dendro_6",
+    "genshinecraft:aura/attach_dendro_7"
   ]
 }

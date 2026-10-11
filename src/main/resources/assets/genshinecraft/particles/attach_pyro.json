@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:aura/attach_pyro_0",
     "genshinecraft:aura/attach_pyro_1",
-    "genshinecraft:aura/attach_pyro_2"
+    "genshinecraft:aura/attach_pyro_2",
+    "genshinecraft:aura/attach_pyro_3",
+    "genshinecraft:aura/attach_pyro_4",
+    "genshinecraft:aura/attach_pyro_5",
+    "genshinecraft:aura/attach_pyro_6",
+    "genshinecraft:aura/attach_pyro_7"
   ]
 }

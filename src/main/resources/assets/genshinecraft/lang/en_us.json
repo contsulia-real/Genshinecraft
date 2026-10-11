@@ -40,5 +40,13 @@
   "death.attack.genshinecraft.element_dendro_attack": "%1$s was slain by %2$s's dendro attack",
   "death.attack.genshinecraft.element_hydro_attack": "%1$s was slain by %2$s's hydro attack",
   "death.attack.genshinecraft.element_pyro_attack": "%1$s was slain by %2$s's pyro attack",
-  "death.attack.genshinecraft.element_cryo_attack": "%1$s was slain by %2$s's cryo attack"
+  "death.attack.genshinecraft.element_cryo_attack": "%1$s was slain by %2$s's cryo attack",
+  "item.genshinecraft.anemo_sigil": "Anemo Sigil",
+  "item.genshinecraft.geo_sigil": "Geo Sigil",
+  "item.genshinecraft.electro_sigil": "Electro Sigil",
+  "item.genshinecraft.dendro_sigil": "Dendro Sigil",
+  "item.genshinecraft.hydro_sigil": "Hydro Sigil",
+  "item.genshinecraft.pyro_sigil": "Pyro Sigil",
+  "item.genshinecraft.cryo_sigil": "Cryo Sigil",
+  "item.genshinecraft.moon_sigil": "Moon Sigil"
 }

@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:element/electro_0",
     "genshinecraft:element/electro_1",
-    "genshinecraft:element/electro_2"
+    "genshinecraft:element/electro_2",
+    "genshinecraft:element/electro_3",
+    "genshinecraft:element/electro_4",
+    "genshinecraft:element/electro_5",
+    "genshinecraft:element/electro_6",
+    "genshinecraft:element/electro_7"
   ]
 }

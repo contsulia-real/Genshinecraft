@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:element/pyro_0",
     "genshinecraft:element/pyro_1",
-    "genshinecraft:element/pyro_2"
+    "genshinecraft:element/pyro_2",
+    "genshinecraft:element/pyro_3",
+    "genshinecraft:element/pyro_4",
+    "genshinecraft:element/pyro_5",
+    "genshinecraft:element/pyro_6",
+    "genshinecraft:element/pyro_7"
   ]
 }

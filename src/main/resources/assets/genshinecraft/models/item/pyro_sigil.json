@@ -1,0 +1,6 @@
+{
+  "textures": {
+    "layer0": "genshinecraft:item/pyro_sigil"
+  },
+  "parent": "minecraft:item/generated"
+}

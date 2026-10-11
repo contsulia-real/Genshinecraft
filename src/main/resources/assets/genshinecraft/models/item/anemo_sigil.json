@@ -1,0 +1,6 @@
+{
+  "textures": {
+    "layer0": "genshinecraft:item/anemo_sigil"
+  },
+  "parent": "minecraft:item/generated"
+}

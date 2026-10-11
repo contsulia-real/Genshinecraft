@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:element/geo_0",
     "genshinecraft:element/geo_1",
-    "genshinecraft:element/geo_2"
+    "genshinecraft:element/geo_2",
+    "genshinecraft:element/geo_3",
+    "genshinecraft:element/geo_4",
+    "genshinecraft:element/geo_5",
+    "genshinecraft:element/geo_6",
+    "genshinecraft:element/geo_7"
   ]
 }

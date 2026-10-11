@@ -2,6 +2,11 @@
   "textures": [
     "genshinecraft:aura/attach_electro_0",
     "genshinecraft:aura/attach_electro_1",
-    "genshinecraft:aura/attach_electro_2"
+    "genshinecraft:aura/attach_electro_2",
+    "genshinecraft:aura/attach_electro_3",
+    "genshinecraft:aura/attach_electro_4",
+    "genshinecraft:aura/attach_electro_5",
+    "genshinecraft:aura/attach_electro_6",
+    "genshinecraft:aura/attach_electro_7"
   ]
 }
