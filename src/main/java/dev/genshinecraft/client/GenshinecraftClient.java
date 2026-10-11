@@ -11,6 +11,9 @@ import dev.genshinecraft.item.CarrierItems;
 import dev.genshinecraft.item.WeaponBinding;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+//? if >=1.21.1 {
+import net.minecraft.core.component.DataComponents;
+//?}
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 //? if =1.20.1 {
@@ -125,9 +128,48 @@ public final class GenshinecraftClient {
         WeaponBinding binding = WeaponBinding.read(stack);
         if (binding != null) {
             lines.add(Component.translatable("tooltip.genshinecraft.weapon_bound",
-                    Component.translatable(binding.carrierNameKey()))
-                    .withStyle(ChatFormatting.AQUA));
+                    boundCarrierName(binding)).withStyle(ChatFormatting.AQUA));
         }
+    }
+
+    private static Component boundCarrierName(WeaponBinding binding) {
+        Component fallback = Component.translatable(binding.carrierNameKey());
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || !client.player.getUUID().equals(binding.owner())) {
+            return fallback;
+        }
+
+        UUID playerId = client.player.getUUID();
+        Component cursorName = customNameIfBound(client.player.containerMenu.getCarried(), binding, playerId);
+        if (cursorName != null) {
+            return cursorName;
+        }
+        var inventory = client.player.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            Component customName = customNameIfBound(inventory.getItem(slot), binding, playerId);
+            if (customName != null) {
+                return customName;
+            }
+        }
+        return fallback;
+    }
+
+    private static Component customNameIfBound(ItemStack stack, WeaponBinding binding, UUID playerId) {
+        CarrierData data = CarrierData.read(stack);
+        if (data == null || !data.usableBy(playerId) || !data.id().equals(binding.carrierId())
+                || data.element() != binding.element()) {
+            return null;
+        }
+        //? if =1.20.1 {
+        /*if (!stack.hasCustomHoverName()) {
+            return null;
+        }
+        *///?} else {
+        if (stack.get(DataComponents.CUSTOM_NAME) == null) {
+            return null;
+        }
+        //?}
+        return stack.getHoverName();
     }
 
     private static int currentIndex(List<CarrierEntry> carriers) {
