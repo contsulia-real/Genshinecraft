@@ -3,7 +3,10 @@
   "package": "dev.genshinecraft.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "PlayerAttackMixin"
+    "PlayerAttackMixin",
+    "ProjectileElementMixin",
+    "ArrowHitMixin",
+    "TridentHitMixin"
   ],
   "injectors": {
     "defaultRequire": 1

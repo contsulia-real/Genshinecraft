@@ -18,6 +18,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
+import java.util.UUID;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.EnumMap;
@@ -65,18 +67,60 @@ public final class ElementalCombat {
         return new DamageSource(holder, player);
     }
 
+    /** The element was validated at launch; verify its original carrier still exists on impact. */
+    public static DamageSource projectileSource(Projectile projectile, DamageSource vanilla) {
+        if (!(projectile instanceof ElementalProjectile bound)
+                || !(projectile.getOwner() instanceof Player player)) {
+            return vanilla;
+        }
+        UUID carrierId = bound.genshinecraft$carrierId();
+        CarrierData.Element element = bound.genshinecraft$element();
+        if (carrierId == null || element == null) {
+            return vanilla;
+        }
+        var inventory = player.getInventory();
+        boolean valid = false;
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            CarrierData data = CarrierData.read(inventory.getItem(slot));
+            if (data != null && data.id().equals(carrierId)
+                    && data.element() == element && data.usableBy(player.getUUID())) {
+                valid = true;
+                break;
+            }
+        }
+        if (!valid) {
+            return vanilla;
+        }
+        ResourceKey<DamageType> type = ATTACK_TYPES.get(element);
+        //? if >=26.3 {
+        /*var holder = player.level().registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE)
+                .getOrThrow(type);
+        *///?} else {
+        var holder = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
+                .getHolderOrThrow(type);
+        //?}
+        return new DamageSource(holder, projectile, player);
+    }
+
     public static void onMeleeHit(Player player, Entity target, DamageSource source) {
+        spawnHitParticles(player, target, source);
+    }
+
+    public static void onProjectileHit(Projectile projectile, Entity target, DamageSource source) {
+        if (projectile.getOwner() instanceof Player player) {
+            spawnHitParticles(player, target, source);
+        }
+    }
+
+    private static void spawnHitParticles(Player player, Entity target, DamageSource source) {
         if (!(player.level() instanceof ServerLevel server)) {
             return;
         }
-        // The attack already determined and validated its elemental source. Do not
-        // re-read the held weapon after damage: only the actual source matters.
         for (CarrierData.Element element : CarrierData.Element.values()) {
             if (!source.is(ATTACK_TYPES.get(element))) {
                 continue;
             }
-            // The target centre is usually inside its opaque model. Move the
-            // burst to the near surface so the player can actually see it.
+            // Keep the near-side placement, but restore the original subtle burst.
             double dx = player.getX() - target.getX();
             double dz = player.getZ() - target.getZ();
             double distance = Math.sqrt(dx * dx + dz * dz);
@@ -90,7 +134,7 @@ public final class ElementalCombat {
             double y = target.getY() + target.getBbHeight() * 0.55;
             double z = target.getZ() + dz / distance * surface;
             server.sendParticles(ElementalParticles.SPARKS.get(element).get(),
-                    x, y, z, 16, 0.16, 0.26, 0.16, 0.06);
+                    x, y, z, 8, 0.16, 0.26, 0.16, 0.045);
             return;
         }
     }
