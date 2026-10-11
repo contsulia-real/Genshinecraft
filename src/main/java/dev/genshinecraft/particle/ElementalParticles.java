@@ -27,7 +27,7 @@ public final class ElementalParticles {
                 new EnumMap<>(CarrierData.Element.class);
         for (CarrierData.Element element : CarrierData.Element.values()) {
             String id = "element_" + element.name().toLowerCase(Locale.ROOT);
-            result.put(element, PARTICLES.register(id, () -> new SimpleParticleType(false) {
+            result.put(element, PARTICLES.register(id, () -> new SimpleParticleType(true) {
             }));
         }
         return result;

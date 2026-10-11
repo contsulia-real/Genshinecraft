@@ -69,12 +69,29 @@ public final class ElementalCombat {
         if (!(player.level() instanceof ServerLevel server)) {
             return;
         }
-        CarrierData data = WeaponBinding.resolve(player.getMainHandItem(), player);
-        if (data == null || !source.is(ATTACK_TYPES.get(data.element()))) {
+        // The attack already determined and validated its elemental source. Do not
+        // re-read the held weapon after damage: only the actual source matters.
+        for (CarrierData.Element element : CarrierData.Element.values()) {
+            if (!source.is(ATTACK_TYPES.get(element))) {
+                continue;
+            }
+            // The target centre is usually inside its opaque model. Move the
+            // burst to the near surface so the player can actually see it.
+            double dx = player.getX() - target.getX();
+            double dz = player.getZ() - target.getZ();
+            double distance = Math.sqrt(dx * dx + dz * dz);
+            if (distance < 0.001) {
+                dx = 0.0;
+                dz = 1.0;
+                distance = 1.0;
+            }
+            double surface = target.getBbWidth() * 0.5 + 0.18;
+            double x = target.getX() + dx / distance * surface;
+            double y = target.getY() + target.getBbHeight() * 0.55;
+            double z = target.getZ() + dz / distance * surface;
+            server.sendParticles(ElementalParticles.SPARKS.get(element).get(),
+                    x, y, z, 16, 0.16, 0.26, 0.16, 0.06);
             return;
         }
-        server.sendParticles(ElementalParticles.SPARKS.get(data.element()).get(),
-                target.getX(), target.getY() + target.getBbHeight() * 0.5, target.getZ(),
-                8, 0.22, 0.30, 0.22, 0.045);
     }
 }
