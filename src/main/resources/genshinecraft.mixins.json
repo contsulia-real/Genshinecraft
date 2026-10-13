@@ -18,7 +18,8 @@
     "DragonFightBossEventAccessor",
     "WorldLevelDamageMixin",
     "WorldLevelLootMixin",
-    "WorldLevelVisibilityMixin"
+    "WorldLevelVisibilityMixin",
+    "VanillaAdvancementTabsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

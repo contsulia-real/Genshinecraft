@@ -187,6 +187,17 @@ public final class ElementalCombat {
         return new DamageSource(holder, attacker);
     }
 
+    /** Mob elemental attack: one damage type and true mob attribution (including world-level scaling). */
+    public static DamageSource mobSource(ServerLevel level, CarrierData.Element element, Entity attacker) {
+        var key = ATTACK_TYPES.get(element);
+        //? if >=26.3 {
+        /*var holder = level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(key);
+        *///?} else {
+        var holder = level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(key);
+        //?}
+        return new DamageSource(holder, attacker);
+    }
+
     /** Minecraft's Ender Dragon exposes non-living hit parts. Their auras belong to the dragon. */
     private static LivingEntity auraTarget(Entity hitEntity) {
         if (hitEntity instanceof LivingEntity living) return living;

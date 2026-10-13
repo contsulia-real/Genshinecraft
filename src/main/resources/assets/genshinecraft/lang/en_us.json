@@ -173,9 +173,7 @@
   "message.genshinecraft.teleport.unsafe": "No safe landing position near the statue. Teleport cancelled.",
   "item.genshinecraft.moon_cage": "Moondrift Cage",
   "message.genshinecraft.verdant_dew": "Verdant Dew: %s / 3",
-  "advancements.genshinecraft.root.title": "Genshinecraft",
-  "advancements.genshinecraft.root.description": "World Level progression",
-  "advancements.genshinecraft.world_level_0.title": "World Level 0",
+  "advancements.genshinecraft.world_level_0.title": "World Level",
   "advancements.genshinecraft.world_level_0.description": "Starting World Level. No requirements.",
   "advancements.genshinecraft.world_level_1.title": "World Level 1",
   "advancements.genshinecraft.world_level_1.description": "Total server XP levels: at least 20; highest Statue of the Seven offering level: at least 5.",
@@ -194,5 +192,12 @@
   "advancements.genshinecraft.world_level_8.title": "World Level 8",
   "advancements.genshinecraft.world_level_8.description": "Total server XP levels: at least 300; highest Statue of the Seven offering level: at least 40.",
   "advancements.genshinecraft.world_level_9.title": "World Level 9",
-  "advancements.genshinecraft.world_level_9.description": "Total server XP levels: at least 360; highest Statue of the Seven offering level: at least 50."
+  "advancements.genshinecraft.world_level_9.description": "Total server XP levels: at least 360; highest Statue of the Seven offering level: at least 50.",
+  "entity.genshinecraft.slime_anemo": "Anemo Slime",
+  "entity.genshinecraft.slime_geo": "Geo Slime",
+  "entity.genshinecraft.slime_electro": "Electro Slime",
+  "entity.genshinecraft.slime_dendro": "Dendro Slime",
+  "entity.genshinecraft.slime_hydro": "Hydro Slime",
+  "entity.genshinecraft.slime_pyro": "Pyro Slime",
+  "entity.genshinecraft.slime_cryo": "Cryo Slime"
 }

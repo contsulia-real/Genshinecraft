@@ -5,6 +5,7 @@ import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
 import dev.genshinecraft.element.ElementalEntities;
 import dev.genshinecraft.client.entity.BloomCoreRenderer;
 import dev.genshinecraft.client.entity.CrystalShardRenderer;
+import dev.genshinecraft.client.entity.ElementSlimeRenderer;
 import dev.architectury.event.events.client.ClientScreenInputEvent;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientTooltipEvent;
@@ -74,6 +75,10 @@ public final class GenshinecraftClient {
         //?}
         EntityRendererRegistry.register(ElementalEntities.DENDRO_CORE::get, BloomCoreRenderer::new);
         EntityRendererRegistry.register(ElementalEntities.CRYSTAL_SHARD::get, CrystalShardRenderer::new);
+        for (CarrierData.Element element : CarrierData.Element.values()) {
+            var type = ElementalEntities.SLIMES.get(element);
+            EntityRendererRegistry.register(type::get, context -> new ElementSlimeRenderer(context, element));
+        }
         // The creative inventory's item-picker tabs bypass vanilla server-side slot
         // clicks. Intercept only clicks on real player inventory/hotbar slots.
         //? if >=26.3 {
