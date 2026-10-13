@@ -216,12 +216,15 @@ public final class ElementalCombat {
             return amount * state.stellarElementBonus(incoming);
         }
         var plan = ElementalReactionEngine.preview(state, incoming, reactionMode(player, source));
-        float flatBonus = switch (plan.reaction()) {
-            case AGGRAVATE -> 2f;
-            case SPREAD -> 2.4f;
-            default -> 0f;
+        int mastery = reactionMastery(player, source);
+        float damage = switch (plan.reaction()) {
+            case VAPORIZE, MELT -> ElementalReactionEffects.amplifiedDamage(
+                    amount, plan.damageMultiplier(), mastery);
+            case AGGRAVATE -> amount + ElementalReactionEffects.additiveBonus(2f, mastery);
+            case SPREAD -> amount + ElementalReactionEffects.additiveBonus(2.4f, mastery);
+            default -> amount * plan.damageMultiplier();
         };
-        return (amount * plan.damageMultiplier() + flatBonus) * state.stellarElementBonus(incoming);
+        return damage * state.stellarElementBonus(incoming);
     }
 
     static CarrierData.Element sourceElement(DamageSource source) {

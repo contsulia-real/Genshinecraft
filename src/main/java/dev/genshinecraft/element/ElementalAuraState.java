@@ -46,7 +46,9 @@ public final class ElementalAuraState {
     private static final int FREEZE_HITS_TO_BREAK = 3;
     private int superconductTicks;
     private UUID burningOwner;
+    private int burningMastery;
     private UUID electroOwner;
+    private int electroMastery;
     private int lunarChargedTicks;
     private UUID lunarOwner;
     private int lunarMastery;
@@ -270,14 +272,46 @@ public final class ElementalAuraState {
         }
     }
 
-    public void beginElectroCharged(UUID owner) {
+    public void beginElectroCharged(UUID owner, int mastery) {
         electroChargedTicks = 80;
         electroOwner = owner;
+        electroMastery = Math.max(0, mastery);
     }
 
-    public void beginBurning(UUID owner) {
+    public void beginBurning(UUID owner, int mastery) {
         burningTicks = 100;
         burningOwner = owner;
+        burningMastery = Math.max(0, mastery);
+    }
+
+    public record OngoingReaction(UUID owner, int mastery) {}
+
+    public OngoingReaction electroChargedSource() {
+        return new OngoingReaction(electroOwner, electroMastery);
+    }
+
+    public OngoingReaction burningSource() {
+        return new OngoingReaction(burningOwner, burningMastery);
+    }
+
+    /** Restore attribution and EM for any still-active ongoing reactions. */
+    public void restoreOngoingSources(String electroId, int electroEm, String burningId, int burningEm) {
+        if (electroChargedTicks > 0) {
+            electroOwner = parseOwner(electroId);
+            electroMastery = Math.max(0, electroEm);
+        }
+        if (burningTicks > 0) {
+            burningOwner = parseOwner(burningId);
+            burningMastery = Math.max(0, burningEm);
+        }
+    }
+
+    private static UUID parseOwner(String raw) {
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     public void beginQuicken() {
@@ -336,7 +370,9 @@ public final class ElementalAuraState {
         frozenHitsRemaining = 0;
         superconductTicks = 0;
         burningOwner = null;
+        burningMastery = 0;
         electroOwner = null;
+        electroMastery = 0;
         lunarChargedTicks = 0;
         lunarOwner = null;
         lunarMastery = 0;
@@ -380,7 +416,7 @@ public final class ElementalAuraState {
                     consume(CarrierData.Element.HYDRO, 0.4f);
                     consume(CarrierData.Element.ELECTRO, 0.4f);
                     ElementalReactionEffects.dealDamage(server, entity, CarrierData.Element.ELECTRO,
-                            electroOwner, 1.6f);
+                            electroOwner, ElementalReactionEffects.transformativeDamage(1.6f, electroMastery));
                 }
             }
         }
@@ -468,7 +504,7 @@ public final class ElementalAuraState {
             burningTicks--;
             if (entity.tickCount % 20 == 0) {
                 ElementalReactionEffects.dealDamage(server, entity, CarrierData.Element.PYRO,
-                        burningOwner, 1.2f);
+                        burningOwner, ElementalReactionEffects.transformativeDamage(1.2f, burningMastery));
                 server.sendParticles(ElementalParticles.reaction("burning"),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
                         4, 0.2, 0.3, 0.2, 0.02);

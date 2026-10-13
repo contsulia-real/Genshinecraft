@@ -42,7 +42,7 @@ public final class ElementalReactionEffects {
             return;
         }
         state.recordStellarApplication(incoming);
-        ElementalBloomCore.trigger(level, target, incoming);
+        ElementalBloomCore.trigger(level, target, incoming, attacker, mastery);
         applyIncomingElement(level, attacker, target, incoming, false, mode, mastery);
     }
 
@@ -58,7 +58,7 @@ public final class ElementalReactionEffects {
                                              int mastery) {
         ElementalAuraState state = ((ElementalAuraHolder) target).genshinecraft$auras();
         if (swirlSpread) {
-            ElementalBloomCore.trigger(level, target, incoming);
+            ElementalBloomCore.trigger(level, target, incoming, attacker, mastery);
         }
         ElementalReactionEngine.Plan plan = ElementalReactionEngine.preview(state, incoming,
                 swirlSpread ? ElementalReactionEngine.Mode.NORMAL : mode);
@@ -66,13 +66,14 @@ public final class ElementalReactionEffects {
         // damage targets already carrying Pyro.
         if (swirlSpread && (incoming != Element.HYDRO
                 || plan.reaction() == ElementalReactionEngine.Reaction.VAPORIZE)) {
-            float multiplier = plan.damageMultiplier();
-            float bonus = switch (plan.reaction()) {
-                case AGGRAVATE -> 2f;
-                case SPREAD -> 2.4f;
-                default -> 0f;
+            float spreadDamage = transformativeDamage(1.8f, mastery);
+            float damage = switch (plan.reaction()) {
+                case VAPORIZE, MELT -> amplifiedDamage(spreadDamage, plan.damageMultiplier(), mastery);
+                case AGGRAVATE -> spreadDamage + additiveBonus(2f, mastery);
+                case SPREAD -> spreadDamage + additiveBonus(2.4f, mastery);
+                default -> spreadDamage * plan.damageMultiplier();
             };
-            dealDamage(level, target, incoming, attacker.getUUID(), 1.8f * multiplier + bonus);
+            dealDamage(level, target, incoming, attacker.getUUID(), damage);
         }
         if (plan.reaction() == ElementalReactionEngine.Reaction.NONE) {
             if (incoming != Element.ANEMO && incoming != Element.GEO) {
@@ -87,10 +88,10 @@ public final class ElementalReactionEffects {
 
         switch (plan.reaction()) {
             case OVERLOADED -> {
-                splash(level, target, attacker, Element.PYRO, 2.5f, 3.0, true);
+                splash(level, target, attacker, Element.PYRO, 2.5f, mastery, 3.0, true);
             }
             case SUPERCONDUCT -> {
-                splash(level, target, attacker, Element.CRYO, 1.5f, 3.0, false);
+                splash(level, target, attacker, Element.CRYO, 1.5f, mastery, 3.0, false);
                 debuffSuperconduct(level, target);
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
                         target.getBoundingBox().inflate(3.0), e -> e != target && e.isAlive())) {
@@ -99,7 +100,7 @@ public final class ElementalReactionEffects {
             }
             case ELECTRO_CHARGED -> {
                 state.apply(incoming, attacker.getUUID(), mode);
-                state.beginElectroCharged(attacker.getUUID());
+                state.beginElectroCharged(attacker.getUUID(), mastery);
             }
             case FROZEN -> {
                 state.beginFrozen();
@@ -108,7 +109,8 @@ public final class ElementalReactionEffects {
             case SWIRL -> {
                 // Original target gets the Swirl hit. Nearby targets receive
                 // the *element*, with their own reaction consumed/resolved.
-                dealDamage(level, target, plan.existing(), attacker.getUUID(), 1.8f);
+                dealDamage(level, target, plan.existing(), attacker.getUUID(),
+                        transformativeDamage(1.8f, mastery));
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
                         target.getBoundingBox().inflate(3.0), e -> e != target && e.isAlive())) {
                     applyIncomingElement(level, attacker, other, plan.existing(), true,
@@ -166,10 +168,10 @@ public final class ElementalReactionEffects {
                 }
             }
             case BURNING -> {
-                state.beginBurning(attacker.getUUID());
+                state.beginBurning(attacker.getUUID(), mastery);
                 state.apply(Element.PYRO, attacker.getUUID(), mode);
             }
-            case BLOOM -> ElementalBloomCore.spawn(level, target, attacker);
+            case BLOOM -> ElementalBloomCore.spawn(level, target, attacker, false, mastery);
             case QUICKEN -> {
                 state.beginQuicken();
             }
@@ -254,6 +256,22 @@ public final class ElementalReactionEffects {
         //?}
     }
 
+    /** EM bonuses apply to the original triggering attack or reaction, never a target's EM. */
+    public static float amplifiedDamage(float base, float multiplier, int mastery) {
+        double em = Math.max(0, mastery);
+        return (float) (base * multiplier * (1.0 + 2.78 * em / (em + 1400.0)));
+    }
+
+    public static float additiveBonus(float base, int mastery) {
+        double em = Math.max(0, mastery);
+        return (float) (base * (1.0 + 5.0 * em / (em + 1200.0)));
+    }
+
+    public static float transformativeDamage(float base, int mastery) {
+        double em = Math.max(0, mastery);
+        return (float) (base * (1.0 + 16.0 * em / (em + 2000.0)));
+    }
+
     /** Wiki reactions can crit. Mod adaptation: 5% baseline, 1.5x crit and EM bonus. */
     static void dealSpecialDamage(ServerLevel level, LivingEntity target, Element element,
                                           UUID owner, float base, int mastery, DamageNumbers.Gradient gradient) {
@@ -307,11 +325,12 @@ public final class ElementalReactionEffects {
     }
 
     private static void splash(ServerLevel level, LivingEntity central, Player attacker,
-                               Element element, float damage, double radius, boolean push) {
+                               Element element, float damage, int mastery, double radius, boolean push) {
+        float scaledDamage = transformativeDamage(damage, mastery);
         for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
                 central.getBoundingBox().inflate(radius), LivingEntity::isAlive)) {
             if (victim != attacker) {
-                dealDamage(level, victim, element, attacker.getUUID(), damage);
+                dealDamage(level, victim, element, attacker.getUUID(), scaledDamage);
             }
             if (push && victim != attacker) {
                 double dx = victim.getX() - central.getX();

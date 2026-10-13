@@ -111,6 +111,16 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder, A
                 flags.putInt(key, genshinecraft$auraState.statusTicks(key));
             }
             flags.putInt("freeze_hits", genshinecraft$auraState.remainingFrozenHits());
+            var electro = genshinecraft$auraState.electroChargedSource();
+            if (genshinecraft$auraState.statusTicks("electro") > 0) {
+                flags.putInt("electro_mastery", electro.mastery());
+                if (electro.owner() != null) flags.putString("electro_owner", electro.owner().toString());
+            }
+            var burning = genshinecraft$auraState.burningSource();
+            if (genshinecraft$auraState.statusTicks("burning") > 0) {
+                flags.putInt("burning_mastery", burning.mastery());
+                if (burning.owner() != null) flags.putString("burning_owner", burning.owner().toString());
+            }
         }
     }
 
@@ -127,6 +137,9 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder, A
             genshinecraft$auraState.restoreFrozenHits(flags.getInt("freeze_hits").orElse(0));
             genshinecraft$auraState.restoreDew(
                     flags.getInt("dew").orElse(0), flags.getInt("dew_cooldown").orElse(0));
+            genshinecraft$auraState.restoreOngoingSources(
+                    flags.getStringOr("electro_owner", ""), flags.getInt("electro_mastery").orElse(0),
+                    flags.getStringOr("burning_owner", ""), flags.getInt("burning_mastery").orElse(0));
         });
         input.child(GENSHINCRAFT_AURAS).ifPresent(list -> {
             for (CarrierData.Element element : CarrierData.Element.values()) {
@@ -168,6 +181,16 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder, A
                 flags.putInt(key, genshinecraft$auraState.statusTicks(key));
             }
             flags.putInt("freeze_hits", genshinecraft$auraState.remainingFrozenHits());
+            var electro = genshinecraft$auraState.electroChargedSource();
+            if (genshinecraft$auraState.statusTicks("electro") > 0) {
+                flags.putInt("electro_mastery", electro.mastery());
+                if (electro.owner() != null) flags.putString("electro_owner", electro.owner().toString());
+            }
+            var burning = genshinecraft$auraState.burningSource();
+            if (genshinecraft$auraState.statusTicks("burning") > 0) {
+                flags.putInt("burning_mastery", burning.mastery());
+                if (burning.owner() != null) flags.putString("burning_owner", burning.owner().toString());
+            }
             tag.put(GENSHINCRAFT_REACTIONS, flags);
         }
     }
@@ -185,6 +208,9 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder, A
                     flags.getInt("freeze_hits"));
             genshinecraft$auraState.restoreDew(
                     flags.getInt("dew"), flags.getInt("dew_cooldown"));
+            genshinecraft$auraState.restoreOngoingSources(
+                    flags.getString("electro_owner"), flags.getInt("electro_mastery"),
+                    flags.getString("burning_owner"), flags.getInt("burning_mastery"));
         }
         if (!tag.contains(GENSHINCRAFT_AURAS)) {
             return;

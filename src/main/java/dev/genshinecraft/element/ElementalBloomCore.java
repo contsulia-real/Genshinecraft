@@ -38,14 +38,10 @@ public final class ElementalBloomCore extends Entity {
     private static final String MASTERY_KEY = "genshinecraft.lunar_mastery";
     private UUID owner;
     private boolean lunar;
-    private int lunarMastery;
+    private int reactionMastery;
 
     public ElementalBloomCore(EntityType<? extends ElementalBloomCore> type, Level level) {
         super(type, level);
-    }
-
-    public static void spawn(ServerLevel level, LivingEntity target, Player owner) {
-        spawn(level, target, owner, false, 0);
     }
 
     public static void spawn(ServerLevel level, LivingEntity target, Player owner, boolean lunar, int mastery) {
@@ -57,12 +53,12 @@ public final class ElementalBloomCore extends Entity {
         }
         if (existing.size() >= MAX_CORES) {
             existing.stream().max(Comparator.comparingInt(core -> core.tickCount))
-                    .ifPresent(core -> detonate(level, core, 2f, 2.5, "bloom"));
+                    .ifPresent(core -> detonate(level, core, 2f, 2.5, "bloom", core.owner, core.reactionMastery));
         }
         ElementalBloomCore core = new ElementalBloomCore(ElementalEntities.DENDRO_CORE.get(), level);
         core.owner = owner.getUUID();
         core.lunar = lunar;
-        core.lunarMastery = lunar ? Math.max(0, mastery) : 0;
+        core.reactionMastery = Math.max(0, mastery);
         double angle = level.getRandom().nextDouble() * Math.PI * 2;
         core.setPos(target.getX() + Math.cos(angle), target.getY() + 0.22,
                 target.getZ() + Math.sin(angle));
@@ -82,12 +78,13 @@ public final class ElementalBloomCore extends Entity {
             particles(server, getX(), getY(), getZ(), 2, "bloom");
         }
         if (tickCount >= LIFE_TICKS) {
-            detonate(server, this, 2f, 2.5, "bloom");
+            detonate(server, this, 2f, 2.5, "bloom", owner, reactionMastery);
         }
     }
 
     /** Fire detonates the nearest core; Electro launches its Hyperbloom damage. */
-    public static boolean trigger(ServerLevel level, LivingEntity hit, Element incoming) {
+    public static boolean trigger(ServerLevel level, LivingEntity hit, Element incoming,
+                                  Player attacker, int mastery) {
         if (incoming != Element.PYRO && incoming != Element.ELECTRO) {
             return false;
         }
@@ -98,7 +95,7 @@ public final class ElementalBloomCore extends Entity {
         }
         ElementalBloomCore core = cores.get(0);
         if (incoming == Element.PYRO) {
-            detonate(level, core, 4f, 3.0, "burgeon");
+            detonate(level, core, 4f, 3.0, "burgeon", attacker.getUUID(), mastery);
         } else {
             LivingEntity selected = hit;
             double nearest = Double.MAX_VALUE;
@@ -113,8 +110,9 @@ public final class ElementalBloomCore extends Entity {
                     selected = other;
                 }
             }
-            ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, core.owner,
-                    4f, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
+            ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, attacker.getUUID(),
+                    ElementalReactionEffects.transformativeDamage(4f, mastery),
+                    core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
             if (selected.isAlive() && !selected.getUUID().equals(core.owner)) {
                 applyLunarDew(level, core, List.of(selected));
             }
@@ -127,13 +125,15 @@ public final class ElementalBloomCore extends Entity {
     }
 
     private static void detonate(ServerLevel level, ElementalBloomCore core,
-                                 float damage, double radius, String effect) {
+                                 float damage, double radius, String effect,
+                                 UUID triggerOwner, int mastery) {
+        float scaledDamage = ElementalReactionEffects.transformativeDamage(damage, mastery);
         List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class,
                 core.getBoundingBox().inflate(radius),
                 target -> target.isAlive() && !target.getUUID().equals(core.owner));
         for (LivingEntity target : targets) {
-            ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, core.owner,
-                    damage, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
+            ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, triggerOwner,
+                    scaledDamage, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
         }
         targets.removeIf(target -> !target.isAlive());
         applyLunarDew(level, core, targets);
@@ -152,7 +152,7 @@ public final class ElementalBloomCore extends Entity {
         ElementalReactionEffects.notifyVerdantDew(player, state.verdantDew());
         for (LivingEntity target : targets) {
             ElementalReactionEffects.dealSpecialDamage(level, target, Element.DENDRO,
-                    core.owner, 2f, core.lunarMastery, DamageNumbers.Gradient.LUNAR_BLOOM);
+                    core.owner, 2f, core.reactionMastery, DamageNumbers.Gradient.LUNAR_BLOOM);
             ElementalReactionEffects.spawnReaction(level, target, "lunar_dew", 8);
         }
     }
@@ -203,14 +203,14 @@ public final class ElementalBloomCore extends Entity {
             output.putString(OWNER_KEY, owner.toString());
         }
         output.putBoolean(LUNAR_KEY, lunar);
-        output.putInt(MASTERY_KEY, lunarMastery);
+        output.putInt(MASTERY_KEY, reactionMastery);
     }
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
         restoreOwner(input.getStringOr(OWNER_KEY, ""));
         lunar = input.getBooleanOr(LUNAR_KEY, false);
-        lunarMastery = Math.max(0, input.getIntOr(MASTERY_KEY, 0));
+        reactionMastery = Math.max(0, input.getIntOr(MASTERY_KEY, 0));
     }
     *///?} else {
     @Override
@@ -219,14 +219,14 @@ public final class ElementalBloomCore extends Entity {
             tag.putString(OWNER_KEY, owner.toString());
         }
         tag.putBoolean(LUNAR_KEY, lunar);
-        tag.putInt(MASTERY_KEY, lunarMastery);
+        tag.putInt(MASTERY_KEY, reactionMastery);
     }
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         restoreOwner(tag.getString(OWNER_KEY));
         lunar = tag.getBoolean(LUNAR_KEY);
-        lunarMastery = Math.max(0, tag.getInt(MASTERY_KEY));
+        reactionMastery = Math.max(0, tag.getInt(MASTERY_KEY));
     }
     //?}
 }
