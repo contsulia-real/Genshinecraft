@@ -30,16 +30,6 @@ public final class WorldLevelAdvancements {
     public static void sync(ServerPlayer player, int level) {
         var manager = ((ServerLevel) player.level()).getServer().getAdvancements();
         var playerAdvancements = player.getAdvancements();
-        //? if =1.20.1 {
-        /*var root = manager.getAdvancement(id("root"));
-        *///?} else {
-        var root = manager.get(id("root"));
-        //?}
-        if (root == null) return;
-        if (!playerAdvancements.getOrStartProgress(root).isDone()) {
-            playerAdvancements.award(root, "synced");
-        }
-
         for (int i = 0; i <= 9; i++) {
             //? if =1.20.1 {
             /*var marker = manager.getAdvancement(id("world_level_" + i));

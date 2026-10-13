@@ -17,7 +17,8 @@
     "FrozenMobAiMixin",
     "DragonFightBossEventAccessor",
     "WorldLevelDamageMixin",
-    "WorldLevelLootMixin"
+    "WorldLevelLootMixin",
+    "WorldLevelVisibilityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
