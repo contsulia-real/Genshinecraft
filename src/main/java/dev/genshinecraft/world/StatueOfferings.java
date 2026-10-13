@@ -233,21 +233,49 @@ public final class StatueOfferings extends SavedData {
         updateWorldLevel();
     }
 
-    /** Only seven-statue offerings count; moon accounts and player XP snapshots do not. */
-    private void updateWorldLevel() {
-        long experience = 0;
-        int highestStatue = 1;
+    /** Last recorded vanilla experience levels of players, including offline snapshots. */
+    public long totalExperienceLevels() {
+        long total = 0;
         for (var entry : entries.entrySet()) {
-            String key = entry.getKey();
-            if (key.startsWith(PLAYER_XP_PREFIX)) {
-                try {
-                    experience += Math.max(0, Integer.parseInt(entry.getValue()));
-                } catch (NumberFormatException ignored) {
-                }
-            } else if (!key.equals(WORLD_LEVEL_KEY) && !key.startsWith("moon_")) {
-                highestStatue = Math.max(highestStatue, progress(key).level());
+            if (!entry.getKey().startsWith(PLAYER_XP_PREFIX)) continue;
+            try {
+                total += Math.max(0, Integer.parseInt(entry.getValue()));
+            } catch (NumberFormatException ignored) {
             }
         }
+        return total;
+    }
+
+    /** Highest level of the seven shared elemental statues, excluding moon offerings. */
+    public int highestStatueLevel() {
+        int highest = 1;
+        for (String key : entries.keySet()) {
+            if (!key.equals(WORLD_LEVEL_KEY) && !key.startsWith("moon_")
+                    && !key.startsWith(PLAYER_XP_PREFIX)) {
+                highest = Math.max(highest, progress(key).level());
+            }
+        }
+        return highest;
+    }
+
+    public static int experienceRequirement(int level) { return XP_REQUIREMENTS[level]; }
+    public static int statueRequirement(int level) { return STATUE_REQUIREMENTS[level]; }
+
+    /** Administrator override; later qualifying progress can still raise it. */
+    public void setWorldLevel(int level) {
+        if (level < 0 || level > 9 || level == worldLevel()) return;
+        entries.put(WORLD_LEVEL_KEY, Integer.toString(level));
+        setDirty();
+    }
+
+    public int refreshWorldLevel() {
+        updateWorldLevel();
+        return worldLevel();
+    }
+
+    private void updateWorldLevel() {
+        long experience = totalExperienceLevels();
+        int highestStatue = highestStatueLevel();
         int level = worldLevel();
         int raised = level;
         while (raised < 9 && experience >= XP_REQUIREMENTS[raised + 1]

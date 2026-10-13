@@ -7,6 +7,7 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import dev.genshinecraft.element.ElementalAuraState;
 import dev.genshinecraft.element.ElementalReactionEngine;
+import dev.genshinecraft.world.WorldLevelMobs;
 import dev.genshinecraft.item.CarrierData;
 import net.minecraft.world.entity.LivingEntity;
 //? if >=26.3 {
@@ -81,6 +82,7 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder, A
     @Inject(method = "tick", at = @At("TAIL"))
     private void genshinecraft$auraTick(CallbackInfo ci) {
         genshinecraft$auraState.tick((LivingEntity) (Object) this);
+        WorldLevelMobs.tick((LivingEntity) (Object) this);
     }
 
     //? if >=26.3 {

@@ -1,5 +1,5 @@
 {
-  "parent": "genshinecraft:root",
+  "parent": "genshinecraft:world_level_2",
   "display": {
     "icon": {
       "id": "minecraft:lapis_lazuli"
@@ -13,7 +13,7 @@
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,
-    "hidden": true
+    "hidden": false
   },
   "criteria": {
     "synced": {

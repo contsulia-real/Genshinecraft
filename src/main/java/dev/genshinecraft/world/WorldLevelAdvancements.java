@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.resources.ResourceLocation;
 //?}
 
-/** Keep exactly the current server world-level marker visible in the Genshinecraft advancements tab. */
+/** Grant a continuous World Level 0-9 advancement chain without resetting earlier milestones. */
 public final class WorldLevelAdvancements {
     private WorldLevelAdvancements() {}
 
@@ -48,9 +48,10 @@ public final class WorldLevelAdvancements {
             //?}
             if (marker == null) continue;
             boolean completed = playerAdvancements.getOrStartProgress(marker).isDone();
-            if (i == level && !completed) {
+            if (i <= level && !completed) {
                 playerAdvancements.award(marker, "synced");
-            } else if (i != level && completed) {
+            } else if (i > level && completed) {
+                // Administrative overrides can lower the effective world level.
                 playerAdvancements.revoke(marker, "synced");
             }
         }

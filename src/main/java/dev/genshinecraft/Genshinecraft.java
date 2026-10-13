@@ -13,6 +13,7 @@ import dev.genshinecraft.world.ElementOres;
 import dev.genshinecraft.world.StatueBlocks;
 import dev.genshinecraft.world.StatueOfferings;
 import dev.genshinecraft.world.WorldLevelAdvancements;
+import dev.genshinecraft.world.WorldLevelCommands;
 import dev.genshinecraft.world.StatueOfferingMenu;
 import dev.genshinecraft.world.StatueMenus;
 import dev.genshinecraft.world.StatueTeleportPacket;
@@ -31,6 +32,7 @@ public final class Genshinecraft {
         ElementOres.init();
         StatueBlocks.init();
         StatueMenus.init();
+        WorldLevelCommands.register();
         StatueTeleportPacket.init();
         CarrierItems.init();
         ElementalEntities.init();
