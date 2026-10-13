@@ -82,7 +82,7 @@ public final class ElementalCombat {
     }
 
     public static DamageSource meleeSource(Player player, ItemStack weapon, DamageSource vanilla) {
-        CarrierData data = WeaponBinding.resolve(weapon, player);
+        CarrierData data = CarrierData.read(meleeCarrier(weapon, player));
         if (data == null) {
             return vanilla;
         }
@@ -169,9 +169,16 @@ public final class ElementalCombat {
                 }
             }
         } else {
-            carrier = WeaponBinding.resolveStack(player.getMainHandItem(), player);
+            carrier = meleeCarrier(player.getMainHandItem(), player);
         }
         return carrier;
+    }
+
+    /** Accept both an owned organ wielded directly and a weapon bound to an owned organ. */
+    private static ItemStack meleeCarrier(ItemStack held, Player player) {
+        CarrierData data = CarrierData.read(held);
+        return data != null && data.usableBy(player.getUUID())
+                ? held : WeaponBinding.resolveStack(held, player);
     }
 
     /** Reaction damage has its own element color and attributes to its original player. */
