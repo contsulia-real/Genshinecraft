@@ -46,7 +46,8 @@ public final class ElementalBloomCore extends Entity {
     public static void spawn(ServerLevel level, LivingEntity target, Player owner, boolean lunar, int mastery) {
         List<ElementalBloomCore> existing = new ArrayList<>();
         for (var entity : level.getAllEntities()) {
-            if (entity instanceof ElementalBloomCore core) {
+            if (entity instanceof ElementalBloomCore core && !core.isRemoved()
+                    && owner.getUUID().equals(core.owner)) {
                 existing.add(core);
             }
         }
@@ -124,8 +125,12 @@ public final class ElementalBloomCore extends Entity {
         if (incoming != Element.PYRO && incoming != Element.ELECTRO) return false;
         List<ElementalBloomCore> cores = level.getEntitiesOfClass(ElementalBloomCore.class,
                 hit.getBoundingBox().inflate(2.8));
-        if (cores.isEmpty()) return false;
-        return triggerCore(level, cores.get(0), hit, incoming, attacker, mastery);
+        ElementalBloomCore nearest = cores.stream()
+                .filter(core -> !core.isRemoved())
+                .min(Comparator.comparingDouble((ElementalBloomCore core) -> core.distanceToSqr(hit))
+                        .thenComparingInt(Entity::getId))
+                .orElse(null);
+        return nearest != null && triggerCore(level, nearest, hit, incoming, attacker, mastery);
     }
 
     /** Shared resolution for a directly attacked core or an indirectly triggered core. */
@@ -135,12 +140,14 @@ public final class ElementalBloomCore extends Entity {
         if (incoming == Element.PYRO) {
             detonate(level, core, 4f, 3.0, "burgeon", attacker.getUUID(), mastery);
         } else {
-            LivingEntity selected = hit != null && hit.isAlive()
-                    && !hit.getUUID().equals(core.owner) ? hit : null;
+            // A core is single-use even if its damage synchronously triggers other effects.
+            core.discard();
+            LivingEntity selected = hit != null && canDamage(core, hit, attacker.getUUID(), attacker)
+                    ? hit : null;
             double nearest = selected == null ? Double.MAX_VALUE : selected.distanceToSqr(core);
             for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
-                    core.getBoundingBox().inflate(5.0), LivingEntity::isAlive)) {
-                if (other == attacker || other.getUUID().equals(core.owner)) continue;
+                    core.getBoundingBox().inflate(5.0),
+                    candidate -> canDamage(core, candidate, attacker.getUUID(), attacker))) {
                 double distance = other.distanceToSqr(core);
                 if (distance < nearest) {
                     nearest = distance;
@@ -158,18 +165,29 @@ public final class ElementalBloomCore extends Entity {
                     selected == null ? core.getY() : selected.getY() + selected.getBbHeight() * 0.6,
                     selected == null ? core.getZ() : selected.getZ(),
                     12, 0.25, 0.3, 0.25, 0.08);
-            core.discard();
         }
         return true;
+    }
+
+    /** A reaction never hits either owner or triggerer; other players obey vanilla PvP rules. */
+    private static boolean canDamage(ElementalBloomCore core, LivingEntity target,
+                                     UUID triggerOwner, Player triggerer) {
+        if (!target.isAlive() || target.getUUID().equals(core.owner)
+                || target.getUUID().equals(triggerOwner)) return false;
+        return !(target instanceof Player player)
+                || (triggerer != null && triggerer.canHarmPlayer(player));
     }
 
     private static void detonate(ServerLevel level, ElementalBloomCore core,
                                  float damage, double radius, String effect,
                                  UUID triggerOwner, int mastery) {
+        if (core.isRemoved()) return;
+        core.discard();
         float scaledDamage = ElementalReactionEffects.transformativeDamage(damage, mastery);
+        Player triggerer = triggerOwner == null ? null : level.getPlayerByUUID(triggerOwner);
         List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class,
                 core.getBoundingBox().inflate(radius),
-                target -> target.isAlive() && !target.getUUID().equals(core.owner));
+                target -> canDamage(core, target, triggerOwner, triggerer));
         for (LivingEntity target : targets) {
             ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, triggerOwner,
                     scaledDamage, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
@@ -177,7 +195,6 @@ public final class ElementalBloomCore extends Entity {
         targets.removeIf(target -> !target.isAlive());
         applyLunarDew(level, core, targets);
         particles(level, core.getX(), core.getY(), core.getZ(), 14, effect);
-        core.discard();
     }
 
     /** Spend one owner's charge for one lunar core, even when the blast hits several enemies. */
