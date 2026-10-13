@@ -30,7 +30,7 @@ public final class ElementSlime extends Slime {
     public void tick() {
         super.tick();
         if (level() instanceof ServerLevel) {
-            var aura = ((ElementalAuraHolder) this).genshinecraft$auras();
+            var aura = ((ElementalAuraHolder) (Object) this).genshinecraft$auras();
             if (!aura.has(element)) {
                 aura.apply(element, null);
             }

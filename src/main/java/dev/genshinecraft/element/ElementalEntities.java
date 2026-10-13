@@ -64,7 +64,7 @@ public final class ElementalEntities {
         for (CarrierData.Element element : CarrierData.Element.values()) {
             String path = "slime_" + element.name().toLowerCase(java.util.Locale.ROOT);
             result.put(element, ENTITIES.register(path, () -> EntityType.Builder
-                    .of((type, level) -> new ElementSlime(type, level, element), MobCategory.MONSTER)
+                    .<ElementSlime>of((type, level) -> new ElementSlime(type, level, element), MobCategory.MONSTER)
                     .sized(0.52f, 0.52f).clientTrackingRange(8).updateInterval(2)
                     //? if >=26.3 {
                     /*.build(ResourceKey.create(Registries.ENTITY_TYPE,

@@ -57,7 +57,11 @@ public final class OrganAbilities {
             default -> false;
         };
         if (!supported) return InteractionResult.PASS;
+        //? if >=26.3 {
+        /*if (level.isClientSide()) return InteractionResult.SUCCESS;
+        *///?} else {
         if (level.isClientSide) return InteractionResult.SUCCESS;
+        //?}
         if (!(level instanceof ServerLevel server)) return InteractionResult.PASS;
         boolean changed = switch (element) {
             case PYRO -> ignite(server, pos.relative(ctx.getClickedFace()), player);
@@ -141,7 +145,11 @@ public final class OrganAbilities {
                 || player.getEyePosition().distanceToSqr(target.getEyePosition()) > 2.25) {
             return InteractionResult.PASS;
         }
+        //? if >=26.3 {
+        /*if (player.level().isClientSide()) return InteractionResult.SUCCESS;
+        *///?} else {
         if (player.level().isClientSide) return InteractionResult.SUCCESS;
+        //?}
         if (!(player.level() instanceof ServerLevel server)) return InteractionResult.PASS;
         if (element == CarrierData.Element.CRYO) {
             //? if >=26.3 {
