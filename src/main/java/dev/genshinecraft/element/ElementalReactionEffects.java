@@ -11,6 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.network.chat.Component;
 
 import java.util.UUID;
 
@@ -122,11 +123,15 @@ public final class ElementalReactionEffects {
 
             }
             case LUNAR_BLOOM -> {
-                // Wiki: produces a normal Dendro Core and a shared Verdant Dew reserve,
-                // but the triggering Lunar-Bloom reaction does not directly damage.
-                ElementalBloomCore.spawn(level, target, attacker, true);
-                ((ElementalAuraHolder) attacker).genshinecraft$auras().collectVerdantDew();
-                spawnReaction(level, attacker, "lunar_dew", 8);
+                // Lunar-Bloom generates a core and reserve, without an immediate reaction hit.
+                ElementalBloomCore.spawn(level, target, attacker, true, mastery);
+                ElementalAuraState dew = ((ElementalAuraHolder) attacker).genshinecraft$auras();
+                if (dew.collectVerdantDew()) {
+                    if (attacker instanceof ServerPlayer player) {
+                        notifyVerdantDew(player, dew.verdantDew());
+                    }
+                    spawnReaction(level, attacker, "lunar_dew", 8);
+                }
             }
             case LUNAR_CRYSTALLIZE -> {
                 ElementalCrystals.createMoonCages(level, target);
@@ -239,8 +244,18 @@ public final class ElementalReactionEffects {
         }
     }
 
+    /** Vanilla action-bar message for changes to the player's Verdant Dew reserve. */
+    static void notifyVerdantDew(ServerPlayer player, int count) {
+        Component message = Component.translatable("message.genshinecraft.verdant_dew", count);
+        //? if >=26.3 {
+        /*player.sendOverlayMessage(message);
+        *///?} else {
+        player.displayClientMessage(message, true);
+        //?}
+    }
+
     /** Wiki reactions can crit. Mod adaptation: 5% baseline, 1.5x crit and EM bonus. */
-    private static void dealSpecialDamage(ServerLevel level, LivingEntity target, Element element,
+    static void dealSpecialDamage(ServerLevel level, LivingEntity target, Element element,
                                           UUID owner, float base, int mastery, DamageNumbers.Gradient gradient) {
         // Reactions target opponents; the triggering player cannot damage themself.
         if (owner != null && owner.equals(target.getUUID())) return;

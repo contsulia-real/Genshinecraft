@@ -171,5 +171,6 @@
   "message.genshinecraft.teleport.no_moon": "当前维度找不到可传送的月神像。",
   "message.genshinecraft.teleport.invalid": "来源神像不存在或外置魔力器官不可用。",
   "message.genshinecraft.teleport.unsafe": "神像附近没有安全落脚点，传送已取消。",
-  "item.genshinecraft.moon_cage": "月笼"
+  "item.genshinecraft.moon_cage": "月笼",
+  "message.genshinecraft.verdant_dew": "草露：%s / 3"
 }

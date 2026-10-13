@@ -77,7 +77,6 @@ public final class CarrierItems {
                             output.accept(StatueBlocks.ALTAR_ITEMS.get(element).get());
                         }
                         output.accept(MOON_SIGIL.get());
-                        output.accept(MOON_CAGE_MODEL.get());
                         output.accept(StatueBlocks.MOON_ALTAR_ITEM.get());
                     }))
     );

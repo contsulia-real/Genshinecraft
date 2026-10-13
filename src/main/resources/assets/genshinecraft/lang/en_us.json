@@ -171,5 +171,6 @@
   "message.genshinecraft.teleport.no_moon": "No Moon Statue destination was found in this dimension.",
   "message.genshinecraft.teleport.invalid": "Source statue missing or external magic organ unusable.",
   "message.genshinecraft.teleport.unsafe": "No safe landing position near the statue. Teleport cancelled.",
-  "item.genshinecraft.moon_cage": "Moondrift Cage"
+  "item.genshinecraft.moon_cage": "Moondrift Cage",
+  "message.genshinecraft.verdant_dew": "Verdant Dew: %s / 3"
 }

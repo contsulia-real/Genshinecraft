@@ -15,6 +15,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 //? if >=26.3 {
 /*import net.minecraft.world.level.storage.ValueInput;
@@ -34,18 +35,20 @@ public final class ElementalBloomCore extends Entity {
     private static final int LIFE_TICKS = 120;
     private static final String OWNER_KEY = "genshinecraft.owner";
     private static final String LUNAR_KEY = "genshinecraft.lunar";
+    private static final String MASTERY_KEY = "genshinecraft.lunar_mastery";
     private UUID owner;
     private boolean lunar;
+    private int lunarMastery;
 
     public ElementalBloomCore(EntityType<? extends ElementalBloomCore> type, Level level) {
         super(type, level);
     }
 
     public static void spawn(ServerLevel level, LivingEntity target, Player owner) {
-        spawn(level, target, owner, false);
+        spawn(level, target, owner, false, 0);
     }
 
-    public static void spawn(ServerLevel level, LivingEntity target, Player owner, boolean lunar) {
+    public static void spawn(ServerLevel level, LivingEntity target, Player owner, boolean lunar, int mastery) {
         List<ElementalBloomCore> existing = new ArrayList<>();
         for (var entity : level.getAllEntities()) {
             if (entity instanceof ElementalBloomCore core) {
@@ -59,6 +62,7 @@ public final class ElementalBloomCore extends Entity {
         ElementalBloomCore core = new ElementalBloomCore(ElementalEntities.DENDRO_CORE.get(), level);
         core.owner = owner.getUUID();
         core.lunar = lunar;
+        core.lunarMastery = lunar ? Math.max(0, mastery) : 0;
         double angle = level.getRandom().nextDouble() * Math.PI * 2;
         core.setPos(target.getX() + Math.cos(angle), target.getY() + 0.22,
                 target.getZ() + Math.sin(angle));
@@ -111,6 +115,9 @@ public final class ElementalBloomCore extends Entity {
             }
             ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, core.owner,
                     4f, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
+            if (selected.isAlive() && !selected.getUUID().equals(core.owner)) {
+                applyLunarDew(level, core, List.of(selected));
+            }
             level.sendParticles(ElementalParticles.reaction("hyperbloom"),
                     selected.getX(), selected.getY() + selected.getBbHeight() * 0.6,
                     selected.getZ(), 12, 0.25, 0.3, 0.25, 0.08);
@@ -121,15 +128,33 @@ public final class ElementalBloomCore extends Entity {
 
     private static void detonate(ServerLevel level, ElementalBloomCore core,
                                  float damage, double radius, String effect) {
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                core.getBoundingBox().inflate(radius), LivingEntity::isAlive)) {
-            if (!target.getUUID().equals(core.owner)) {
-                ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, core.owner,
-                        damage, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
-            }
+        List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class,
+                core.getBoundingBox().inflate(radius),
+                target -> target.isAlive() && !target.getUUID().equals(core.owner));
+        for (LivingEntity target : targets) {
+            ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, core.owner,
+                    damage, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
         }
+        targets.removeIf(target -> !target.isAlive());
+        applyLunarDew(level, core, targets);
         particles(level, core.getX(), core.getY(), core.getZ(), 14, effect);
         core.discard();
+    }
+
+    /** Spend one owner's charge for one lunar core, even when the blast hits several enemies. */
+    private static void applyLunarDew(ServerLevel level, ElementalBloomCore core,
+                                      List<LivingEntity> targets) {
+        if (!core.lunar || core.owner == null || targets.isEmpty()) return;
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(core.owner);
+        if (player == null) return;
+        ElementalAuraState state = ((ElementalAuraHolder) player).genshinecraft$auras();
+        if (!state.spendVerdantDew()) return;
+        ElementalReactionEffects.notifyVerdantDew(player, state.verdantDew());
+        for (LivingEntity target : targets) {
+            ElementalReactionEffects.dealSpecialDamage(level, target, Element.DENDRO,
+                    core.owner, 2f, core.lunarMastery, DamageNumbers.Gradient.LUNAR_BLOOM);
+            ElementalReactionEffects.spawnReaction(level, target, "lunar_dew", 8);
+        }
     }
 
     private static void particles(ServerLevel level, double x, double y, double z,
@@ -178,12 +203,14 @@ public final class ElementalBloomCore extends Entity {
             output.putString(OWNER_KEY, owner.toString());
         }
         output.putBoolean(LUNAR_KEY, lunar);
+        output.putInt(MASTERY_KEY, lunarMastery);
     }
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
         restoreOwner(input.getStringOr(OWNER_KEY, ""));
         lunar = input.getBooleanOr(LUNAR_KEY, false);
+        lunarMastery = Math.max(0, input.getIntOr(MASTERY_KEY, 0));
     }
     *///?} else {
     @Override
@@ -192,12 +219,14 @@ public final class ElementalBloomCore extends Entity {
             tag.putString(OWNER_KEY, owner.toString());
         }
         tag.putBoolean(LUNAR_KEY, lunar);
+        tag.putInt(MASTERY_KEY, lunarMastery);
     }
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         restoreOwner(tag.getString(OWNER_KEY));
         lunar = tag.getBoolean(LUNAR_KEY);
+        lunarMastery = Math.max(0, tag.getInt(MASTERY_KEY));
     }
     //?}
 }

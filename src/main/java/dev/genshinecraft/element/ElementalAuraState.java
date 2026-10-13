@@ -110,12 +110,19 @@ public final class ElementalAuraState {
         lunarMastery = Math.max(0, mastery);
     }
 
-    /** Wiki: one Verdant Dew per 2.5s, up to three; Lunar-Bloom has no direct reaction hit. */
-    public void collectVerdantDew() {
-        if (dewCooldown <= 0) {
-            verdantDew = Math.min(3, verdantDew + 1);
-            dewCooldown = 50;
-        }
+    /** One Verdant Dew per 2.5s, up to three; Lunar-Bloom itself does not hit. */
+    public boolean collectVerdantDew() {
+        if (dewCooldown > 0 || verdantDew >= 3) return false;
+        verdantDew++;
+        dewCooldown = 50;
+        return true;
+    }
+
+    /** One Lunar-Bloom core can spend only one charge. */
+    public boolean spendVerdantDew() {
+        if (verdantDew <= 0) return false;
+        verdantDew--;
+        return true;
     }
 
     /** One Lunar-Crystallize creates three cages. Exactly two landed attacks activate them. */
