@@ -11,6 +11,7 @@ import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.EntityType;
 //?}
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -562,13 +563,13 @@ public final class ElementalAuraState {
                 continue;
             }
             active.setValue(new Aura(gauge, remaining, old.applier(), old.source()));
-            if (entity.tickCount % PARTICLE_INTERVAL == 0) {
+            if (!(entity instanceof Player) && entity.tickCount % PARTICLE_INTERVAL == 0) {
                 server.sendParticles(ElementalParticles.AURAS.get(active.getKey()).get(),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.65, entity.getZ(),
                         2, entity.getBbWidth() * 0.55 + 0.10,
                         entity.getBbHeight() * 0.20, entity.getBbWidth() * 0.55 + 0.10, 0.008);
             }
-            if (entity.tickCount % (PARTICLE_INTERVAL * 2) == 0) {
+            if (!(entity instanceof Player) && entity.tickCount % (PARTICLE_INTERVAL * 2) == 0) {
                 server.sendParticles(ElementalParticles.EMBLEMS.get(active.getKey()).get(),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.78, entity.getZ(),
                         1, entity.getBbWidth() * 0.4 + 0.06,

@@ -43,6 +43,7 @@ public final class AuraIconOverlay {
     //?}
         Minecraft client = Minecraft.getInstance();
         if (client.level == null || client.player == null) return;
+        renderPlayerAuras(graphics, client);
         List<LivingEntity> affected = affectedEntities(client);
         if (affected.isEmpty()) return;
 
@@ -73,7 +74,9 @@ public final class AuraIconOverlay {
                 Math.tan(Math.toRadians(Math.max(30, Math.min(110, fov))) * 0.5);
 
         for (LivingEntity living : affected) {
-            if (onBossBars.contains(living.getUUID()) || living.isInvisibleTo(client.player)) continue;
+            if (living == client.player || client.player.distanceToSqr(living) > 25.0
+                    || onBossBars.contains(living.getUUID())
+                    || living.isInvisibleTo(client.player)) continue;
             Vec3 target = new Vec3(living.getX(), living.getY() + living.getBbHeight() * 0.72,
                     living.getZ());
             // The HUD has no depth buffer: avoid drawing elemental icons through terrain.
@@ -97,6 +100,38 @@ public final class AuraIconOverlay {
                 glyph(graphics, client, x, y, element.ordinal(), false);
                 y += 14;
             }
+        }
+    }
+
+    /** Local player's aura is a horizontal HUD row, never a world-space label. */
+    //? if >=26.3 {
+    /*private static void renderPlayerAuras(GuiGraphicsExtractor graphics, Minecraft client) {
+    *///?} else {
+    private static void renderPlayerAuras(GuiGraphics graphics, Minecraft client) {
+    //?}
+        int mask = ((AuraIconHolder) client.player).genshinecraft$auraIcons();
+        if (mask == 0) return;
+        int count = Integer.bitCount(mask);
+        boolean creative = client.player.getAbilities().instabuild;
+        int x;
+        int y;
+        if (creative) {
+            // Vanilla creative HUD has no armor row: center icons above the hotbar.
+            x = graphics.guiWidth() / 2 - count * 11 / 2;
+            y = graphics.guiHeight() - 39;
+        } else {
+            // Vanilla positions armor above the hearts, moving it up for extra heart rows.
+            int rows = Math.max(1, (int) Math.ceil((Math.max(client.player.getMaxHealth(),
+                    client.player.getHealth()) + Math.ceil(client.player.getAbsorptionAmount())) / 20.0));
+            int rowHeight = Math.max(10 - (rows - 2), 3);
+            int armorY = graphics.guiHeight() - 49 - (rows - 1) * rowHeight;
+            x = graphics.guiWidth() / 2 - 91 + (80 - count * 11) / 2;
+            y = armorY - 12;
+        }
+        for (CarrierData.Element element : CarrierData.Element.values()) {
+            if ((mask & (1 << element.ordinal())) == 0) continue;
+            glyph(graphics, client, x, y, element.ordinal(), true);
+            x += 11;
         }
     }
 
