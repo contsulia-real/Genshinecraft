@@ -19,6 +19,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.level.ClipContext;
 import org.joml.Vector3fc;
 
 import java.util.ArrayList;
@@ -71,9 +73,14 @@ public final class AuraIconOverlay {
                 Math.tan(Math.toRadians(Math.max(30, Math.min(110, fov))) * 0.5);
 
         for (LivingEntity living : affected) {
-            if (onBossBars.contains(living.getUUID())) continue;
-            Vec3 offset = new Vec3(living.getX(), living.getY() + living.getBbHeight() * 0.72,
-                    living.getZ()).subtract(cameraPosition);
+            if (onBossBars.contains(living.getUUID()) || living.isInvisibleTo(client.player)) continue;
+            Vec3 target = new Vec3(living.getX(), living.getY() + living.getBbHeight() * 0.72,
+                    living.getZ());
+            // The HUD has no depth buffer: avoid drawing elemental icons through terrain.
+            if (client.level.clip(new ClipContext(cameraPosition, target,
+                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, client.player))
+                    .getType() == HitResult.Type.BLOCK) continue;
+            Vec3 offset = target.subtract(cameraPosition);
             double depth = offset.dot(forward);
             if (depth < 0.3 || depth > 128) continue;
             int mask = ((AuraIconHolder) living).genshinecraft$auraIcons();

@@ -81,7 +81,9 @@ public final class ElementalEntities {
 
     public static void init() {
         ENTITIES.register();
-        for (var type : SLIMES.values()) {
+        for (var entry : SLIMES.entrySet()) {
+            CarrierData.Element element = entry.getKey();
+            var type = entry.getValue();
             EntityAttributeRegistry.register(type::get, Monster::createMonsterAttributes);
             SpawnPlacementsRegistry.register(type::get,
                     //? if =1.20.1 {
@@ -90,16 +92,18 @@ public final class ElementalEntities {
                     SpawnPlacementTypes.ON_GROUND,
                     //?}
                     Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                    Mob::checkMobSpawnRules);
+                    (entityType, level, reason, pos, random) ->
+                            Mob.checkMobSpawnRules(entityType, level, reason, pos, random)
+                                    && ElementSlime.canSpawn(element, level, pos));
         }
         BiomeModifications.addProperties(ctx -> ctx.hasTag(BiomeTags.IS_OVERWORLD), (ctx, biome) -> {
             for (var type : SLIMES.values()) {
                 biome.getSpawnProperties().addSpawn(MobCategory.MONSTER,
                         //? if >=26.3 {
                         /*new MobSpawnSettings.SpawnerData(type.get(),
-                                net.minecraft.util.valueproviders.UniformInt.of(1, 2)), 8);
+                                net.minecraft.util.valueproviders.UniformInt.of(1, 1)), 1);
                         *///?} else {
-                        new MobSpawnSettings.SpawnerData(type.get(), 8, 1, 2));
+                        new MobSpawnSettings.SpawnerData(type.get(), 1, 1, 1));
                         //?}
             }
         });

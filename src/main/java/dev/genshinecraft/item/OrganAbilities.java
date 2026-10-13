@@ -19,6 +19,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
 
 /** Active right-click powers of a valid owned external magic organ. One block, twenty ticks. */
 public final class OrganAbilities {
@@ -44,12 +45,12 @@ public final class OrganAbilities {
 
     public static InteractionResult useOn(UseOnContext ctx, CarrierData.Element element) {
         Player player = ctx.getPlayer();
-        if (player == null || !ready(player, ctx.getItemInHand())) return InteractionResult.PASS;
+        if (player == null) return InteractionResult.PASS;
         BlockPos pos = ctx.getClickedPos();
         Level level = ctx.getLevel();
-        if (player.getEyePosition().distanceToSqr(ctx.getClickLocation()) > 2.25
-                || !level.mayInteract(player, pos)
-                || !player.mayUseItemAt(pos, ctx.getClickedFace(), ctx.getItemInHand())) {
+        // One-block reach from the player's body, not their eyes: the old eye-distance
+        // check rejected a block directly beside the player's feet.
+        if (!player.getBoundingBox().inflate(1.0).intersects(new AABB(pos))) {
             return InteractionResult.PASS;
         }
         boolean supported = switch (element) {
@@ -62,7 +63,12 @@ public final class OrganAbilities {
         *///?} else {
         if (level.isClientSide) return InteractionResult.SUCCESS;
         //?}
-        if (!(level instanceof ServerLevel server)) return InteractionResult.PASS;
+        if (!(level instanceof ServerLevel server)
+                || !ready(player, ctx.getItemInHand())
+                || !level.mayInteract(player, pos)
+                || !player.mayUseItemAt(pos, ctx.getClickedFace(), ctx.getItemInHand())) {
+            return InteractionResult.PASS;
+        }
         boolean changed = switch (element) {
             case PYRO -> ignite(server, pos.relative(ctx.getClickedFace()), player);
             case HYDRO -> water(server, pos, ctx.getClickedFace(), player);
@@ -141,8 +147,8 @@ public final class OrganAbilities {
     public static InteractionResult useOnEntity(Player player, ItemStack organ, LivingEntity target,
                                                 CarrierData.Element element) {
         if (element != CarrierData.Element.CRYO && element != CarrierData.Element.ELECTRO) return InteractionResult.PASS;
-        if (!ready(player, organ) || !target.isAlive()
-                || player.getEyePosition().distanceToSqr(target.getEyePosition()) > 2.25) {
+        if (!target.isAlive()
+                || !player.getBoundingBox().inflate(1.0).intersects(target.getBoundingBox())) {
             return InteractionResult.PASS;
         }
         //? if >=26.3 {
@@ -150,7 +156,9 @@ public final class OrganAbilities {
         *///?} else {
         if (player.level().isClientSide) return InteractionResult.SUCCESS;
         //?}
-        if (!(player.level() instanceof ServerLevel server)) return InteractionResult.PASS;
+        if (!(player.level() instanceof ServerLevel server) || !ready(player, organ)) {
+            return InteractionResult.PASS;
+        }
         if (element == CarrierData.Element.CRYO) {
             //? if >=26.3 {
             /*target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 0), player);
@@ -169,17 +177,16 @@ public final class OrganAbilities {
     public static InteractionResult useInAir(Level level, Player player, ItemStack organ,
                                              CarrierData.Element element) {
         if (element != CarrierData.Element.CRYO && element != CarrierData.Element.ELECTRO) return InteractionResult.PASS;
-        if (!ready(player, organ)) return InteractionResult.PASS;
         Vec3 origin = player.getEyePosition();
-        Vec3 end = origin.add(player.getLookAngle().scale(1.5));
+        Vec3 end = origin.add(player.getLookAngle());
         LivingEntity nearest = null;
         double distance = Double.MAX_VALUE;
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                player.getBoundingBox().inflate(1.5), e -> e != player && e.isAlive())) {
+                player.getBoundingBox().inflate(1.0), e -> e != player && e.isAlive())) {
             var hit = living.getBoundingBox().inflate(0.15).clip(origin, end);
             if (hit.isEmpty()) continue;
             double d = origin.distanceToSqr(hit.get());
-            if (d < distance && d <= 2.25) {
+            if (d < distance && d <= 1.0) {
                 nearest = living;
                 distance = d;
             }

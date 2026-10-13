@@ -7,6 +7,14 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.core.BlockPos;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.material.Fluid;
 //? if >=26.3 {
 /*import net.minecraft.world.entity.monster.cubemob.Slime;
 *///?} else {
@@ -24,6 +32,46 @@ public final class ElementSlime extends Slime {
 
     public CarrierData.Element element() {
         return element;
+    }
+
+    /** Evaluate the actual spawn site: a biome alone is insufficient for water, lava, or rock. */
+    public static boolean canSpawn(CarrierData.Element element, LevelAccessor level, BlockPos pos) {
+        var biome = level.getBiome(pos);
+        if (!biome.is(BiomeTags.IS_OVERWORLD)) return false;
+        return switch (element) {
+            case DENDRO -> biome.is(Biomes.PLAINS) || biome.is(Biomes.SUNFLOWER_PLAINS);
+            case CRYO -> biome.value().getBaseTemperature() <= 0.15f;
+            case PYRO -> nearFluid(level, pos, FluidTags.LAVA);
+            case HYDRO -> nearFluid(level, pos, FluidTags.WATER);
+            case ANEMO -> pos.getY() >= 120;
+            case GEO -> rockyGround(level, pos);
+            case ELECTRO -> biome.is(Biomes.SWAMP) || biome.is(Biomes.MANGROVE_SWAMP);
+        };
+    }
+
+    private static boolean nearFluid(LevelAccessor level, BlockPos pos, TagKey<Fluid> fluid) {
+        for (int x = -3; x <= 3; x++) {
+            for (int z = -3; z <= 3; z++) {
+                for (int y = -2; y <= 2; y++) {
+                    if (level.getFluidState(pos.offset(x, y, z)).is(fluid)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean rockyGround(LevelAccessor level, BlockPos pos) {
+        int stone = 0;
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                BlockPos ground = pos.offset(x, -1, z);
+                if (level.getBlockState(ground).is(BlockTags.BASE_STONE_OVERWORLD)
+                        || level.getBlockState(ground.below()).is(BlockTags.BASE_STONE_OVERWORLD)) {
+                    if (++stone >= 8) return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
