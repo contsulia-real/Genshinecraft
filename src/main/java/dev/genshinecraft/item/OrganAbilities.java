@@ -18,8 +18,6 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.AABB;
 
 /** Active right-click powers of a valid owned external magic organ. One block, twenty ticks. */
 public final class OrganAbilities {
@@ -48,11 +46,6 @@ public final class OrganAbilities {
         if (player == null) return InteractionResult.PASS;
         BlockPos pos = ctx.getClickedPos();
         Level level = ctx.getLevel();
-        // One-block reach from the player's body, not their eyes: the old eye-distance
-        // check rejected a block directly beside the player's feet.
-        if (!player.getBoundingBox().inflate(1.0).intersects(new AABB(pos))) {
-            return InteractionResult.PASS;
-        }
         boolean supported = switch (element) {
             case PYRO, HYDRO, DENDRO, ANEMO, GEO -> true;
             default -> false;
@@ -147,10 +140,7 @@ public final class OrganAbilities {
     public static InteractionResult useOnEntity(Player player, ItemStack organ, LivingEntity target,
                                                 CarrierData.Element element) {
         if (element != CarrierData.Element.CRYO && element != CarrierData.Element.ELECTRO) return InteractionResult.PASS;
-        if (!target.isAlive()
-                || !player.getBoundingBox().inflate(1.0).intersects(target.getBoundingBox())) {
-            return InteractionResult.PASS;
-        }
+        if (!target.isAlive()) return InteractionResult.PASS;
         //? if >=26.3 {
         /*if (player.level().isClientSide()) return InteractionResult.SUCCESS;
         *///?} else {
@@ -173,24 +163,4 @@ public final class OrganAbilities {
         return InteractionResult.SUCCESS;
     }
 
-    /** Hits only the entity the player faces within one block, not every nearby entity. */
-    public static InteractionResult useInAir(Level level, Player player, ItemStack organ,
-                                             CarrierData.Element element) {
-        if (element != CarrierData.Element.CRYO && element != CarrierData.Element.ELECTRO) return InteractionResult.PASS;
-        Vec3 origin = player.getEyePosition();
-        Vec3 end = origin.add(player.getLookAngle());
-        LivingEntity nearest = null;
-        double distance = Double.MAX_VALUE;
-        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                player.getBoundingBox().inflate(1.0), e -> e != player && e.isAlive())) {
-            var hit = living.getBoundingBox().inflate(0.15).clip(origin, end);
-            if (hit.isEmpty()) continue;
-            double d = origin.distanceToSqr(hit.get());
-            if (d < distance && d <= 1.0) {
-                nearest = living;
-                distance = d;
-            }
-        }
-        return nearest == null ? InteractionResult.PASS : useOnEntity(player, organ, nearest, element);
-    }
 }

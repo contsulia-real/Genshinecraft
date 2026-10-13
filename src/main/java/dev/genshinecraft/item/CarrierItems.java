@@ -25,10 +25,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.Level;
-//? if <26.3 {
-import net.minecraft.world.InteractionResultHolder;
-//?}
 
 //? if >=26.3 {
 /*import net.minecraft.resources.Identifier;
@@ -241,21 +237,6 @@ public final class CarrierItems {
                                                        LivingEntity target, InteractionHand hand) {
             return OrganAbilities.useOnEntity(player, stack, target, element);
         }
-
-        //? if >=26.3 {
-        /*@Override
-        public InteractionResult use(Level level, Player player, InteractionHand hand) {
-            return OrganAbilities.useInAir(level, player, player.getItemInHand(hand), element);
-        }
-        *///?} else {
-        @Override
-        public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-            ItemStack stack = player.getItemInHand(hand);
-            InteractionResult result = OrganAbilities.useInAir(level, player, stack, element);
-            return result == InteractionResult.SUCCESS ? InteractionResultHolder.success(stack)
-                    : InteractionResultHolder.pass(stack);
-        }
-        //?}
 
         @Override
         public boolean overrideStackedOnOther(ItemStack carrier, Slot slot, ClickAction action, Player player) {
