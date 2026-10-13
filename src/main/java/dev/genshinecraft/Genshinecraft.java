@@ -18,6 +18,7 @@ import dev.genshinecraft.world.StatueTeleportPacket;
 import net.minecraft.world.inventory.GrindstoneMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
 
 public final class Genshinecraft {
     public static final String MOD_ID = "genshinecraft";
@@ -48,6 +49,8 @@ public final class Genshinecraft {
                     CarrierData.claim(stack, player);
                 }
             }
+            // Keep one server-wide XP snapshot per UUID; offline players retain their last level.
+            StatueOfferings.get((ServerLevel) player.level()).trackExperience(player);
             if (player.tickCount % 20 == 0) {
                 StatueOfferings.syncCarriers(player);
             }

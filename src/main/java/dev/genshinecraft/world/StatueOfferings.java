@@ -36,6 +36,13 @@ import java.util.Map;
 /** Per-statue levels and partial offerings, shared across players and persisted in the world. */
 public final class StatueOfferings extends SavedData {
     private static final String FILE = "genshinecraft_statue_offerings";
+    private static final String WORLD_LEVEL_KEY = "world_level";
+    private static final String PLAYER_XP_PREFIX = "player_xp@";
+    private static final int[] XP_REQUIREMENTS = {0, 20, 45, 75, 110, 150, 195, 245, 300, 360};
+    private static final int[] STATUE_REQUIREMENTS = {1, 5, 10, 15, 20, 25, 30, 35, 40, 50};
+    private static final int[] MOON_LIMITS = {
+            10, 15, 20, 25, 30, 35, 40, 50, Integer.MAX_VALUE, Integer.MAX_VALUE
+    };
     //? if >=26.3 {
     /*private static final TagKey<Structure> MOON_STRUCTURES = TagKey.create(Registries.STRUCTURE,
             Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, "moon_statues"));
@@ -203,7 +210,57 @@ public final class StatueOfferings extends SavedData {
         return Progress.INITIAL;
     }
 
-    /** Initially up to 50; after level 50 each completed level unlocks its successor. */
+    /** Server-wide world level only rises; its requirements include offline players' last known XP levels. */
+    public int worldLevel() {
+        try {
+            return Math.max(0, Math.min(9, Integer.parseInt(entries.getOrDefault(WORLD_LEVEL_KEY, "0"))));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+    }
+
+    public static int moonLimit(int worldLevel) {
+        return MOON_LIMITS[Math.max(0, Math.min(9, worldLevel))];
+    }
+
+    /** Retain one latest vanilla XP level per UUID, including after disconnect. */
+    public void trackExperience(Player player) {
+        String key = PLAYER_XP_PREFIX + player.getUUID();
+        String value = Integer.toString(Math.max(0, player.experienceLevel));
+        if (value.equals(entries.get(key))) return;
+        entries.put(key, value);
+        setDirty();
+        updateWorldLevel();
+    }
+
+    /** Only seven-statue offerings count; moon accounts and player XP snapshots do not. */
+    private void updateWorldLevel() {
+        long experience = 0;
+        int highestStatue = 1;
+        for (var entry : entries.entrySet()) {
+            String key = entry.getKey();
+            if (key.startsWith(PLAYER_XP_PREFIX)) {
+                try {
+                    experience += Math.max(0, Integer.parseInt(entry.getValue()));
+                } catch (NumberFormatException ignored) {
+                }
+            } else if (!key.equals(WORLD_LEVEL_KEY) && !key.startsWith("moon_")) {
+                highestStatue = Math.max(highestStatue, progress(key).level());
+            }
+        }
+        int level = worldLevel();
+        int raised = level;
+        while (raised < 9 && experience >= XP_REQUIREMENTS[raised + 1]
+                && highestStatue >= STATUE_REQUIREMENTS[raised + 1]) {
+            raised++;
+        }
+        if (raised != level) {
+            entries.put(WORLD_LEVEL_KEY, Integer.toString(raised));
+            setDirty();
+        }
+    }
+
+    /** Normal statues initially list 50 levels, then reveal each next level as they grow. */
     public static long unlocked(int level) {
         return Math.max(50L, (long) level + 1);
     }
@@ -246,13 +303,22 @@ public final class StatueOfferings extends SavedData {
         }
         String source = element == null ? moonId(player) : id(level, pos);
         Progress current = progress(source);
-        if (current.level() == Integer.MAX_VALUE) return 0;
+        int maximum = element == null ? moonLimit(worldLevel()) : Integer.MAX_VALUE;
+        if (current.level() >= maximum) return 0;
         long remaining = cost((long) current.level() + 1) - current.contributed();
         if (remaining <= 0) return 0;
 
         int available = countSigils(player, element);
         if (!all && available < remaining) return 0;
         long budget = all ? available : remaining;
+        if (element == null && maximum < Integer.MAX_VALUE) {
+            // Do not consume sigils for locked moon levels, even via "offer all".
+            long toLimit = -current.contributed();
+            for (int currentLevel = current.level(); currentLevel < maximum; currentLevel++) {
+                toLimit += cost((long) currentLevel + 1);
+            }
+            budget = Math.min(budget, toLimit);
+        }
         if (budget <= 0) return 0;
 
         var inventory = player.getInventory();
@@ -273,7 +339,7 @@ public final class StatueOfferings extends SavedData {
 
         long updated = current.contributed() + taken;
         int nextLevel = current.level();
-        while (nextLevel < Integer.MAX_VALUE) {
+        while (nextLevel < maximum) {
             long needed = cost((long) nextLevel + 1);
             if (updated < needed) break;
             updated -= needed;
@@ -291,6 +357,8 @@ public final class StatueOfferings extends SavedData {
                 give(level, player, Items.EMERALD, 1 + (milestone % 5 == 0 ? 3 : 0));
             }
         }
+        trackExperience(player);
+        updateWorldLevel();
         syncCarriers(player);
         return taken;
     }

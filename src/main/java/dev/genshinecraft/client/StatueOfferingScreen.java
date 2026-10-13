@@ -100,9 +100,13 @@ public final class StatueOfferingScreen extends AbstractContainerScreen<StatueOf
         }
     }
 
+    private long unlocked() {
+        long normal = StatueOfferings.unlocked(menu.level());
+        return menu.moon() ? Math.max(menu.level(), Math.min(normal, menu.offeringLimit())) : normal;
+    }
+
     private int lastStart() {
-        return (int) Math.max(1L, Math.min(Integer.MAX_VALUE,
-                StatueOfferings.unlocked(menu.level()) - TRADE_ROWS + 1));
+        return (int) Math.max(1L, Math.min(Integer.MAX_VALUE, unlocked() - TRADE_ROWS + 1));
     }
 
     private boolean insideScroller(double mx, double my) {
@@ -286,8 +290,8 @@ public final class StatueOfferingScreen extends AbstractContainerScreen<StatueOf
         int current = menu.level();
         CarrierData.Element element = menu.element();
         levelButton.active = menu.availableSigils() >= menu.remainingToNextLevel()
-                && current < Integer.MAX_VALUE;
-        allButton.active = menu.availableSigils() > 0 && current < Integer.MAX_VALUE;
+                && current < menu.offeringLimit();
+        allButton.active = menu.availableSigils() > 0 && current < menu.offeringLimit();
 
         // Original Minecraft container-edge pixel order: black outline, light top/left,
         // dark lower/right, untouched #c6c6c6 window interior. No stretched borders.
@@ -323,7 +327,7 @@ public final class StatueOfferingScreen extends AbstractContainerScreen<StatueOf
         g.text(Component.translatable("screen.genshinecraft.offering.owned",
                 sigilName, menu.availableSigils()), right + 2, y + 32, DARK);
 
-        long unlocked = StatueOfferings.unlocked(current);
+        long unlocked = unlocked();
         long lastStart = Math.max(1L, unlocked - TRADE_ROWS + 1);
         firstLevel = (int) Math.max(1L, Math.min(lastStart, firstLevel));
 
@@ -383,7 +387,7 @@ public final class StatueOfferingScreen extends AbstractContainerScreen<StatueOf
             return null;
         }
         long target = (long) firstLevel + (ry - TRADE_Y) / TRADE_ROW_HEIGHT;
-        if (target > StatueOfferings.unlocked(current) || target > Integer.MAX_VALUE) return null;
+        if (target > unlocked() || target > Integer.MAX_VALUE) return null;
         int localX = rx - TRADE_X;
         int level = (int) target;
         var element = menu.element();

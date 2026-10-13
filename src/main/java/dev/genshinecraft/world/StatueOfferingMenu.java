@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
 
 /** No inventory slots. The two GUI buttons use vanilla container-button packets. */
 public final class StatueOfferingMenu extends AbstractContainerMenu {
-    private static final int SYNC_SIZE = 14;
+    private static final int SYNC_SIZE = 16;
     private final ServerLevel serverLevel;
     private final BlockPos altar;
     private final CarrierData.Element altarElement;
@@ -61,6 +61,12 @@ public final class StatueOfferingMenu extends AbstractContainerMenu {
                     case 11 -> part(progress.contributed(), 48);
                     case 12 -> low(StatueOfferings.countSigils(inventory.player, element));
                     case 13 -> high(StatueOfferings.countSigils(inventory.player, element));
+                    case 14 -> low(element == null
+                            ? StatueOfferings.moonLimit(StatueOfferings.get(level).worldLevel())
+                            : Integer.MAX_VALUE);
+                    case 15 -> high(element == null
+                            ? StatueOfferings.moonLimit(StatueOfferings.get(level).worldLevel())
+                            : Integer.MAX_VALUE);
                     default -> 0;
                 };
             }
@@ -106,6 +112,8 @@ public final class StatueOfferingMenu extends AbstractContainerMenu {
     }
 
     public int availableSigils() { return Math.max(0, intValue(12)); }
+
+    public int offeringLimit() { return intValue(14); }
 
     public long remainingToNextLevel() {
         return Math.max(0L, StatueOfferings.cost((long) level() + 1) - contributed());
