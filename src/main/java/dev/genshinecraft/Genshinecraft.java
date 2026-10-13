@@ -10,6 +10,7 @@ import dev.genshinecraft.item.CarrierItems;
 import dev.genshinecraft.item.WeaponBinding;
 import dev.genshinecraft.particle.ElementalParticles;
 import dev.genshinecraft.world.ElementOres;
+import dev.genshinecraft.world.ChestSigilLoot;
 import dev.genshinecraft.world.StatueBlocks;
 import dev.genshinecraft.world.StatueOfferings;
 import dev.genshinecraft.world.WorldLevelAdvancements;
@@ -35,6 +36,7 @@ public final class Genshinecraft {
         WorldLevelCommands.register();
         StatueTeleportPacket.init();
         CarrierItems.init();
+        ChestSigilLoot.init();
         ElementalEntities.init();
         ElementalParticles.init();
         EnvExecutor.runInEnv(Env.CLIENT, () -> GenshinecraftClient::init);

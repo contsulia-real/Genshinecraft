@@ -400,6 +400,19 @@ public final class ElementalAuraState {
             clear();
             return;
         }
+        // Natural exposure refreshes a normal aura while contact lasts. It costs no damage
+        // and subsequent elemental hits use the existing gauge/reaction engine.
+        if (entity.tickCount % 40 == 0) {
+            if (entity.isInLava() || entity.isOnFire()) {
+                apply(CarrierData.Element.PYRO, null);
+            } else if (entity.isInWaterOrRain()) {
+                apply(CarrierData.Element.HYDRO, null);
+            } else if (entity.getTicksFrozen() > 0
+                    || (server.canSeeSky(entity.blockPosition())
+                    && server.getBiome(entity.blockPosition()).value().getBaseTemperature() <= 0.15f)) {
+                apply(CarrierData.Element.CRYO, null);
+            }
+        }
         icd.entrySet().removeIf(entry -> entity.tickCount - entry.getValue().lastApplicationTick() > 70);
 
         if (electroChargedTicks > 0) {

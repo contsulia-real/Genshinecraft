@@ -102,7 +102,7 @@ public final class StatueOfferingScreen extends AbstractContainerScreen<StatueOf
 
     private long unlocked() {
         long normal = StatueOfferings.unlocked(menu.level());
-        return menu.moon() ? Math.max(menu.level(), Math.min(normal, menu.offeringLimit())) : normal;
+        return Math.max(menu.level(), Math.min(normal, menu.offeringLimit()));
     }
 
     private int lastStart() {

@@ -19,7 +19,8 @@
     "WorldLevelDamageMixin",
     "WorldLevelLootMixin",
     "WorldLevelVisibilityMixin",
-    "VanillaAdvancementTabsMixin"
+    "VanillaAdvancementTabsMixin",
+    "EnvironmentLightningMixin"
   ],
   "injectors": {
     "defaultRequire": 1

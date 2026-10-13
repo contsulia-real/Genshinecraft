@@ -5,6 +5,19 @@ import dev.genshinecraft.item.CarrierData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.SpawnGroupData;
+import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.level.ServerLevelAccessor;
+//? if >=26.3 {
+/*import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.EntitySpawnReason;
+*///?} else {
+import net.minecraft.world.entity.MobSpawnType;
+//?}
+//? if =1.20.1 {
+/*import net.minecraft.nbt.CompoundTag;
+*///?}
+
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -73,6 +86,46 @@ public final class ElementSlime extends Slime {
         }
         return false;
     }
+
+    // The natural spawn pack shares SpawnGroupData. With 3 members, the third
+    // is guaranteed to be medium (size 2); packs of 1 or 2 remain small.
+    //? if >=26.3 {
+    /*@Override
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty,
+                                        EntitySpawnReason reason, SpawnGroupData group) {
+        SpawnGroupData result = super.finalizeSpawn(world, difficulty, reason, group);
+        if ((reason == EntitySpawnReason.NATURAL || reason == EntitySpawnReason.CHUNK_GENERATION)
+                && result instanceof AgeableMob.AgeableMobGroupData data) {
+            setSize(data.getGroupSize() == 3 ? 2 : 1, true);
+        }
+        return result;
+    }
+    *///?} else if =1.20.1 {
+    /*@Override
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty,
+                                        MobSpawnType reason, SpawnGroupData group, CompoundTag tag) {
+        SpawnGroupData result = super.finalizeSpawn(world, difficulty, reason, group, tag);
+        if (reason != MobSpawnType.NATURAL && reason != MobSpawnType.CHUNK_GENERATION) return result;
+        SlimePackData pack = result instanceof SlimePackData data ? data : new SlimePackData();
+        setSize(++pack.count == 3 ? 2 : 1, true);
+        return pack;
+    }
+    *///?} else {
+    @Override
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty,
+                                        MobSpawnType reason, SpawnGroupData group) {
+        SpawnGroupData result = super.finalizeSpawn(world, difficulty, reason, group);
+        if (reason != MobSpawnType.NATURAL && reason != MobSpawnType.CHUNK_GENERATION) return result;
+        SlimePackData pack = result instanceof SlimePackData data ? data : new SlimePackData();
+        setSize(++pack.count == 3 ? 2 : 1, true);
+        return pack;
+    }
+    //?}
+    //? if <26.3 {
+    private static final class SlimePackData implements SpawnGroupData {
+        private int count;
+    }
+    //?}
 
     @Override
     public void tick() {

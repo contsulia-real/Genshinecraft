@@ -2,22 +2,28 @@ package dev.genshinecraft.item;
 
 import dev.genshinecraft.element.ElementalAuraHolder;
 import dev.genshinecraft.element.ElementalReactionEffects;
+import dev.genshinecraft.element.ElementalReactionEngine;
 import dev.genshinecraft.world.ElementOres;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.item.BoneMealItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.BonemealableBlock;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 
 /** Active right-click powers of a valid owned external magic organ. One block, twenty ticks. */
 public final class OrganAbilities {
@@ -65,7 +71,7 @@ public final class OrganAbilities {
         boolean changed = switch (element) {
             case PYRO -> ignite(server, pos.relative(ctx.getClickedFace()), player);
             case HYDRO -> water(server, pos, ctx.getClickedFace(), player);
-            case DENDRO -> BoneMealItem.growCrop(new ItemStack(Items.BONE_MEAL), server, pos);
+            case DENDRO -> matureCrop(server, pos);
             case ANEMO -> accelerate(server, pos);
             case GEO -> mineOre(server, pos, player);
             default -> false;
@@ -73,6 +79,73 @@ public final class OrganAbilities {
         if (!changed) return InteractionResult.PASS;
         cooldown(player, ctx.getItemInHand());
         return InteractionResult.SUCCESS;
+    }
+
+    /** Age-based crops mature immediately; bonemealable crops also get repeated vanilla growth. */
+    private static boolean matureCrop(ServerLevel level, BlockPos pos) {
+        var state = level.getBlockState(pos);
+        if (state.is(Blocks.SUGAR_CANE) || state.is(Blocks.CACTUS) || state.is(Blocks.BAMBOO)) {
+            int maxHeight = state.is(Blocks.BAMBOO) ? 8 : 3;
+            BlockPos base = pos;
+            while (level.getBlockState(base.below()).is(state.getBlock())) base = base.below();
+            int height = 0;
+            while (height < maxHeight && level.getBlockState(base.above(height)).is(state.getBlock())) {
+                height++;
+            }
+            boolean grown = false;
+            while (height < maxHeight) {
+                BlockPos next = base.above(height);
+                if (!level.isEmptyBlock(next)
+                        || !state.getBlock().defaultBlockState().canSurvive(level, next)) break;
+                //? if >=26.3 {
+                /*level.setBlock(next, state.getBlock().defaultBlockState(), 3, 512);
+                *///?} else {
+                level.setBlock(next, state.getBlock().defaultBlockState(), 3);
+                //?}
+                grown = true;
+                height++;
+            }
+            return grown;
+        }
+        for (var property : state.getProperties()) {
+            if (property instanceof IntegerProperty age && age.getName().equals("age")) {
+                int max = age.getPossibleValues().stream().mapToInt(Integer::intValue).max().orElse(0);
+                if (state.getValue(age) < max) {
+                    //? if >=26.3 {
+                    /*return level.setBlock(pos, state.setValue(age, max), 3, 512);
+                    *///?} else {
+                    return level.setBlock(pos, state.setValue(age, max), 3);
+                    //?}
+                }
+                break;
+            }
+        }
+        if (state.getBlock() instanceof BonemealableBlock crop) {
+            boolean grown = false;
+            for (int i = 0; i < 32; i++) {
+                state = level.getBlockState(pos);
+                //? if =1.20.1 {
+                /*if (!(state.getBlock() instanceof BonemealableBlock current)
+                        || !current.isValidBonemealTarget(level, pos, state, false)) break;
+                *///?} else if >=26.3 {
+                /*if (!(state.getBlock() instanceof BonemealableBlock current)
+                        || !current.isValidBonemealTarget(level, pos, state,
+                                net.minecraft.world.level.block.BonemealSource.INTERACTION)) break;
+                *///?} else {
+                if (!(state.getBlock() instanceof BonemealableBlock current)
+                        || !current.isValidBonemealTarget(level, pos, state)) break;
+                //?}
+                //? if >=26.3 {
+                /*current.performBonemeal(level, level.getRandom(), pos, state,
+                        net.minecraft.world.level.block.BonemealSource.INTERACTION);
+                *///?} else {
+                current.performBonemeal(level, level.getRandom(), pos, state);
+                //?}
+                grown = true;
+            }
+            return grown;
+        }
+        return false;
     }
 
     private static boolean ignite(ServerLevel level, BlockPos pos, Player player) {
@@ -95,8 +168,24 @@ public final class OrganAbilities {
         //?}
     }
 
+    /** Accelerate both vanilla random ticks and block-entity tickers (furnaces, brewers, etc). */
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static boolean accelerate(ServerLevel level, BlockPos pos) {
         var state = level.getBlockState(pos);
+        if (state.getBlock() instanceof EntityBlock entityBlock) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity != null) {
+                BlockEntityTicker ticker = entityBlock.getTicker(level, state, blockEntity.getType());
+                if (ticker != null) {
+                    for (int i = 0; i < 20; i++) {
+                        var current = level.getBlockState(pos);
+                        if (blockEntity.isRemoved() || current.getBlock() != state.getBlock()) break;
+                        ticker.tick(level, pos, current, blockEntity);
+                    }
+                    return true;
+                }
+            }
+        }
         if (!state.isRandomlyTicking()) return false;
         for (int i = 0; i < 20; i++) {
             var current = level.getBlockState(pos);
@@ -139,7 +228,9 @@ public final class OrganAbilities {
 
     public static InteractionResult useOnEntity(Player player, ItemStack organ, LivingEntity target,
                                                 CarrierData.Element element) {
-        if (element != CarrierData.Element.CRYO && element != CarrierData.Element.ELECTRO) return InteractionResult.PASS;
+        if (element != CarrierData.Element.CRYO && element != CarrierData.Element.ELECTRO
+                && element != CarrierData.Element.DENDRO && element != CarrierData.Element.PYRO)
+            return InteractionResult.PASS;
         if (!target.isAlive()) return InteractionResult.PASS;
         //? if >=26.3 {
         /*if (player.level().isClientSide()) return InteractionResult.SUCCESS;
@@ -148,6 +239,34 @@ public final class OrganAbilities {
         //?}
         if (!(player.level() instanceof ServerLevel server) || !ready(player, organ)) {
             return InteractionResult.PASS;
+        }
+        if (element == CarrierData.Element.DENDRO) {
+            if (!(target instanceof AgeableMob baby) || baby.getAge() >= 0) return InteractionResult.PASS;
+            baby.setAge(0);
+            cooldown(player, organ);
+            return InteractionResult.SUCCESS;
+        }
+        // All offensive organ interactions use the same elemental-reaction entry point as
+        // melee/projectile attacks. Applying a bare aura bypasses Overloaded and friends.
+        ElementalReactionEngine.Mode mode = ElementalReactionEngine.Mode.NORMAL;
+        for (CarrierData.Element type : CarrierData.Element.values()) {
+            if (organ.is(CarrierItems.MOON_WHEELS.get(type).get())) {
+                mode = ElementalReactionEngine.Mode.LUNAR;
+                break;
+            }
+            if (organ.is(CarrierItems.STAR_WEDGES.get(type).get())) {
+                mode = ElementalReactionEngine.Mode.STELLAR;
+                break;
+            }
+        }
+        ElementalReactionEffects.onHit(server, player, target, element, "organ_right_click", mode,
+                CarrierData.read(organ).elementalMastery());
+        if (element == CarrierData.Element.PYRO) {
+            //? if =1.20.1 {
+            /*target.setSecondsOnFire(4);
+            *///?} else {
+            target.igniteForSeconds(4);
+            //?}
         }
         if (element == CarrierData.Element.CRYO) {
             //? if >=26.3 {
@@ -158,7 +277,6 @@ public final class OrganAbilities {
         } else {
             ElementalReactionEffects.dealDamage(server, target, element, player.getUUID(), 2.0f);
         }
-        ((ElementalAuraHolder) target).genshinecraft$auras().apply(element, player.getUUID());
         cooldown(player, organ);
         return InteractionResult.SUCCESS;
     }

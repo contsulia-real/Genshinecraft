@@ -41,6 +41,8 @@ public record WeaponBinding(UUID carrierId, UUID owner, CarrierData.Element elem
             return false;
         }
         return stack.is(ItemTags.SWORDS) || stack.is(ItemTags.AXES)
+                || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS)
+                || stack.is(ItemTags.HOES)
                 || stack.getItem() instanceof BowItem
                 || stack.getItem() instanceof CrossbowItem
                 || stack.getItem() instanceof TridentItem

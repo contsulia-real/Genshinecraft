@@ -4,6 +4,11 @@ import dev.genshinecraft.combat.ElementalProjectile;
 import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.WeaponBinding;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.server.level.ServerLevel;
@@ -59,6 +64,41 @@ public abstract class ProjectileElementMixin implements ElementalProjectile {
         if (genshinecraft$capture(player.getUseItem(), player, trident)) return;
         if (genshinecraft$capture(player.getMainHandItem(), player, trident)) return;
         genshinecraft$capture(player.getOffhandItem(), player, trident);
+    }
+
+    /** Bound Anemo arrows/tridents pull mobs within one block of their actual hit point. */
+    @Inject(method = "onHit", at = @At("TAIL"))
+    private void genshinecraft$anemoImpact(HitResult hit, CallbackInfo ci) {
+        Projectile projectile = (Projectile) (Object) this;
+        if (!(projectile instanceof AbstractArrow)
+                || !(projectile.level() instanceof ServerLevel server)
+                || !(projectile.getOwner() instanceof Player owner)
+                || genshinecraft$element != CarrierData.Element.ANEMO
+                || genshinecraft$carrierId == null) return;
+        boolean valid = false;
+        var inventory = owner.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            CarrierData data = CarrierData.read(inventory.getItem(slot));
+            if (data != null && data.id().equals(genshinecraft$carrierId)
+                    && data.usableBy(owner.getUUID()) && data.element() == CarrierData.Element.ANEMO) {
+                valid = true;
+                break;
+            }
+        }
+        if (!valid) return;
+        Vec3 center = hit.getLocation();
+        AABB range = new AABB(center, center).inflate(1.0);
+        for (LivingEntity mob : server.getEntitiesOfClass(LivingEntity.class, range,
+                entity -> entity.isAlive() && entity != owner)) {
+            Vec3 direction = center.subtract(mob.getX(),
+                    mob.getY() + mob.getBbHeight() * 0.5, mob.getZ());
+            double distance = direction.length();
+            if (distance < 0.001 || distance > 1.0) continue;
+            double strength = 0.65 / distance;
+            mob.push(direction.x * strength, direction.y * strength, direction.z * strength);
+        }
+        server.sendParticles(ParticleTypes.CLOUD, center.x, center.y, center.z,
+                6, 0.5, 0.25, 0.5, 0.01);
     }
 
     @Unique

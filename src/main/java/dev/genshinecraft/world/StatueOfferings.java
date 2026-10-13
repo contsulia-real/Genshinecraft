@@ -223,6 +223,11 @@ public final class StatueOfferings extends SavedData {
         return MOON_LIMITS[Math.max(0, Math.min(9, worldLevel))];
     }
 
+    /** Each World Level allows offerings up to the next World Level's statue requirement. */
+    public static int sevenStatueLimit(int worldLevel) {
+        return worldLevel >= 9 ? Integer.MAX_VALUE : STATUE_REQUIREMENTS[Math.max(0, worldLevel) + 1];
+    }
+
     /** Retain one latest vanilla XP level per UUID, including after disconnect. */
     public void trackExperience(Player player) {
         String key = PLAYER_XP_PREFIX + player.getUUID();
@@ -331,7 +336,7 @@ public final class StatueOfferings extends SavedData {
         }
         String source = element == null ? moonId(player) : id(level, pos);
         Progress current = progress(source);
-        int maximum = element == null ? moonLimit(worldLevel()) : Integer.MAX_VALUE;
+        int maximum = element == null ? moonLimit(worldLevel()) : sevenStatueLimit(worldLevel());
         if (current.level() >= maximum) return 0;
         long remaining = cost((long) current.level() + 1) - current.contributed();
         if (remaining <= 0) return 0;
@@ -339,8 +344,8 @@ public final class StatueOfferings extends SavedData {
         int available = countSigils(player, element);
         if (!all && available < remaining) return 0;
         long budget = all ? available : remaining;
-        if (element == null && maximum < Integer.MAX_VALUE) {
-            // Do not consume sigils for locked moon levels, even via "offer all".
+        if (maximum < Integer.MAX_VALUE) {
+            // Never consume sigils past the current world-level cap, for either kind of statue.
             long toLimit = -current.contributed();
             for (int currentLevel = current.level(); currentLevel < maximum; currentLevel++) {
                 toLimit += cost((long) currentLevel + 1);

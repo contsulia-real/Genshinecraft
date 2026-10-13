@@ -63,10 +63,10 @@ public final class StatueOfferingMenu extends AbstractContainerMenu {
                     case 13 -> high(StatueOfferings.countSigils(inventory.player, element));
                     case 14 -> low(element == null
                             ? StatueOfferings.moonLimit(StatueOfferings.get(level).worldLevel())
-                            : Integer.MAX_VALUE);
+                            : StatueOfferings.sevenStatueLimit(StatueOfferings.get(level).worldLevel()));
                     case 15 -> high(element == null
                             ? StatueOfferings.moonLimit(StatueOfferings.get(level).worldLevel())
-                            : Integer.MAX_VALUE);
+                            : StatueOfferings.sevenStatueLimit(StatueOfferings.get(level).worldLevel()));
                     default -> 0;
                 };
             }

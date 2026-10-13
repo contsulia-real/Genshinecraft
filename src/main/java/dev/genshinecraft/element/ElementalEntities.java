@@ -65,7 +65,12 @@ public final class ElementalEntities {
             String path = "slime_" + element.name().toLowerCase(java.util.Locale.ROOT);
             result.put(element, ENTITIES.register(path, () -> EntityType.Builder
                     .<ElementSlime>of((type, level) -> new ElementSlime(type, level, element), MobCategory.MONSTER)
-                    .sized(0.52f, 0.52f).clientTrackingRange(8).updateInterval(2)
+                    //? if =1.20.1 {
+                    /*.sized(2.04f, 2.04f)
+                    *///?} else {
+                    .sized(0.52f, 0.52f)
+                    //?}
+                    .clientTrackingRange(8).updateInterval(2)
                     //? if >=26.3 {
                     /*.build(ResourceKey.create(Registries.ENTITY_TYPE,
                             Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, path)))));
@@ -101,9 +106,9 @@ public final class ElementalEntities {
                 biome.getSpawnProperties().addSpawn(MobCategory.MONSTER,
                         //? if >=26.3 {
                         /*new MobSpawnSettings.SpawnerData(type.get(),
-                                net.minecraft.util.valueproviders.UniformInt.of(1, 1)), 1);
+                                net.minecraft.util.valueproviders.UniformInt.of(1, 3)), 1);
                         *///?} else {
-                        new MobSpawnSettings.SpawnerData(type.get(), 1, 1, 1));
+                        new MobSpawnSettings.SpawnerData(type.get(), 1, 1, 3));
                         //?}
             }
         });
