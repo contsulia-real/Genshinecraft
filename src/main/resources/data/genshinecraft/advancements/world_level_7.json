@@ -1,0 +1,28 @@
+{
+  "parent": "genshinecraft:root",
+  "display": {
+    "icon": {
+      "item": "minecraft:emerald"
+    },
+    "title": {
+      "translate": "advancements.genshinecraft.world_level_7.title"
+    },
+    "description": {
+      "translate": "advancements.genshinecraft.world_level_7.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "synced": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "synced"
+    ]
+  ]
+}

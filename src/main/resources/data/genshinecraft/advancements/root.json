@@ -1,0 +1,26 @@
+{
+  "display": {
+    "icon": {
+      "item": "genshinecraft:moon_sigil"
+    },
+    "title": {
+      "translate": "advancements.genshinecraft.root.title"
+    },
+    "description": {
+      "translate": "advancements.genshinecraft.root.description"
+    },
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "synced": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "synced"
+    ]
+  ]
+}

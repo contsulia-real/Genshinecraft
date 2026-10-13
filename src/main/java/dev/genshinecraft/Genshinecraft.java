@@ -12,6 +12,7 @@ import dev.genshinecraft.particle.ElementalParticles;
 import dev.genshinecraft.world.ElementOres;
 import dev.genshinecraft.world.StatueBlocks;
 import dev.genshinecraft.world.StatueOfferings;
+import dev.genshinecraft.world.WorldLevelAdvancements;
 import dev.genshinecraft.world.StatueOfferingMenu;
 import dev.genshinecraft.world.StatueMenus;
 import dev.genshinecraft.world.StatueTeleportPacket;
@@ -53,6 +54,8 @@ public final class Genshinecraft {
             StatueOfferings.get((ServerLevel) player.level()).trackExperience(player);
             if (player.tickCount % 20 == 0) {
                 StatueOfferings.syncCarriers(player);
+                WorldLevelAdvancements.sync((ServerPlayer) player,
+                        StatueOfferings.get((ServerLevel) player.level()).worldLevel());
             }
         });
     }
