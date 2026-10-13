@@ -112,25 +112,24 @@ public record WeaponBinding(UUID carrierId, UUID owner, CarrierData.Element elem
 
     // The binding is a reference: a carrier taken away or abandoned cannot power the weapon.
     public static CarrierData resolve(ItemStack weapon, Player player) {
+        return CarrierData.read(resolveStack(weapon, player));
+    }
+
+    public static ItemStack resolveStack(ItemStack weapon, Player player) {
         WeaponBinding binding = read(weapon);
         if (binding == null || !player.getUUID().equals(binding.owner())) {
-            return null;
+            return ItemStack.EMPTY;
         }
         var inventory = player.getInventory();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-            CarrierData data = CarrierData.read(inventory.getItem(slot));
+            ItemStack stack = inventory.getItem(slot);
+            CarrierData data = CarrierData.read(stack);
             if (data != null && data.id().equals(binding.carrierId())
                     && data.element() == binding.element() && data.usableBy(player.getUUID())) {
-                return data;
+                return stack;
             }
         }
-        CarrierData equipped = CarrierData.read(((OrganSlotHolder) player)
-                .genshinecraft$organSlot().getItem(0));
-        if (equipped != null && equipped.id().equals(binding.carrierId())
-                && equipped.element() == binding.element() && equipped.usableBy(player.getUUID())) {
-            return equipped;
-        }
-        return null;
+        return ItemStack.EMPTY;
     }
 
     private static void write(ItemStack weapon, WeaponBinding binding) {

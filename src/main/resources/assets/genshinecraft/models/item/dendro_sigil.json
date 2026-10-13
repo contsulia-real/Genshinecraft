@@ -1,6 +1,6 @@
 {
   "textures": {
-    "layer0": "genshinecraft:item/dendro_sigil"
+    "layer0": "genshinecraft:item/sigil/dendro_sigil"
   },
   "parent": "minecraft:item/generated"
 }

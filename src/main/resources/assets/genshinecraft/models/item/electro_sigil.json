@@ -1,6 +1,6 @@
 {
   "textures": {
-    "layer0": "genshinecraft:item/electro_sigil"
+    "layer0": "genshinecraft:item/sigil/electro_sigil"
   },
   "parent": "minecraft:item/generated"
 }

@@ -1,15 +1,21 @@
 package dev.genshinecraft.element;
 
-import dev.genshinecraft.combat.ElementalCombat;
 import dev.genshinecraft.item.CarrierData.Element;
+import dev.genshinecraft.combat.DamageNumbers;
 import dev.genshinecraft.particle.ElementalParticles;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Display;
+import net.minecraft.world.entity.Entity;
+//? if >=26.3 {
+/*import net.minecraft.world.damagesource.DamageSource;
+*///?}
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 //? if >=26.3 {
 /*import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -23,17 +29,23 @@ import java.util.List;
 import java.util.UUID;
 
 /** Registered Dendro Core entity. Its visual is a sprouting seed, not vanilla text. */
-public final class ElementalBloomCore extends Display.TextDisplay {
+public final class ElementalBloomCore extends Entity {
     private static final int MAX_CORES = 5;
     private static final int LIFE_TICKS = 120;
     private static final String OWNER_KEY = "genshinecraft.owner";
+    private static final String LUNAR_KEY = "genshinecraft.lunar";
     private UUID owner;
+    private boolean lunar;
 
     public ElementalBloomCore(EntityType<? extends ElementalBloomCore> type, Level level) {
         super(type, level);
     }
 
     public static void spawn(ServerLevel level, LivingEntity target, Player owner) {
+        spawn(level, target, owner, false);
+    }
+
+    public static void spawn(ServerLevel level, LivingEntity target, Player owner, boolean lunar) {
         List<ElementalBloomCore> existing = new ArrayList<>();
         for (var entity : level.getAllEntities()) {
             if (entity instanceof ElementalBloomCore core) {
@@ -46,12 +58,12 @@ public final class ElementalBloomCore extends Display.TextDisplay {
         }
         ElementalBloomCore core = new ElementalBloomCore(ElementalEntities.DENDRO_CORE.get(), level);
         core.owner = owner.getUUID();
+        core.lunar = lunar;
         double angle = level.getRandom().nextDouble() * Math.PI * 2;
         core.setPos(target.getX() + Math.cos(angle), target.getY() + 0.22,
                 target.getZ() + Math.sin(angle));
         core.setNoGravity(true);
         core.setSilent(true);
-        ElementalDisplaySprites.apply(core, '\uE000');
         level.addFreshEntity(core);
         particles(level, core.getX(), core.getY(), core.getZ(), 5, "bloom");
     }
@@ -97,7 +109,8 @@ public final class ElementalBloomCore extends Display.TextDisplay {
                     selected = other;
                 }
             }
-            ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, core.owner, 4f);
+            ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, core.owner,
+                    4f, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
             level.sendParticles(ElementalParticles.reaction("hyperbloom"),
                     selected.getX(), selected.getY() + selected.getBbHeight() * 0.6,
                     selected.getZ(), 12, 0.25, 0.3, 0.25, 0.08);
@@ -111,7 +124,8 @@ public final class ElementalBloomCore extends Display.TextDisplay {
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
                 core.getBoundingBox().inflate(radius), LivingEntity::isAlive)) {
             if (!target.getUUID().equals(core.owner)) {
-                ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, core.owner, damage);
+                ElementalReactionEffects.dealDamage(level, target, Element.DENDRO, core.owner,
+                        damage, core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
             }
         }
         particles(level, core.getX(), core.getY(), core.getZ(), 14, effect);
@@ -124,6 +138,13 @@ public final class ElementalBloomCore extends Display.TextDisplay {
                 x, y, z, count, 0.25, 0.2, 0.25, 0.04);
     }
 
+    //? if >=26.3 {
+    /*@Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
+    }
+    *///?}
+
     private void restoreOwner(String saved) {
         owner = null;
         if (!saved.isEmpty()) {
@@ -135,33 +156,48 @@ public final class ElementalBloomCore extends Display.TextDisplay {
         }
     }
 
+    //? if =1.20.1 {
+    /*@Override
+    protected void defineSynchedData() {
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+        return new ClientboundAddEntityPacket(this);
+    }
+    *///?} else {
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    }
+    //?}
+
     //? if >=26.3 {
     /*@Override
     protected void addAdditionalSaveData(ValueOutput output) {
-        super.addAdditionalSaveData(output);
         if (owner != null) {
             output.putString(OWNER_KEY, owner.toString());
         }
+        output.putBoolean(LUNAR_KEY, lunar);
     }
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
-        super.readAdditionalSaveData(input);
         restoreOwner(input.getStringOr(OWNER_KEY, ""));
+        lunar = input.getBooleanOr(LUNAR_KEY, false);
     }
     *///?} else {
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
         if (owner != null) {
             tag.putString(OWNER_KEY, owner.toString());
         }
+        tag.putBoolean(LUNAR_KEY, lunar);
     }
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
         restoreOwner(tag.getString(OWNER_KEY));
+        lunar = tag.getBoolean(LUNAR_KEY);
     }
     //?}
 }

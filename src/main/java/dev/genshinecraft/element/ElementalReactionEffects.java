@@ -9,6 +9,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 
 import java.util.UUID;
 
@@ -22,14 +24,15 @@ public final class ElementalReactionEffects {
     }
 
     public static void onHit(ServerLevel level, Player attacker, LivingEntity target,
-                             Element incoming, String attackGroup) {
+                             Element incoming, String attackGroup,
+                             ElementalReactionEngine.Mode mode, int mastery) {
         ElementalAuraState state = ((ElementalAuraHolder) target).genshinecraft$auras();
         // Pyro breaks frozen targets on the first hit and leaves a Pyro aura.
         if (incoming == Element.PYRO && state.isFrozen()) {
             state.shatter();
             target.setTicksFrozen(0);
             state.consume(Element.CRYO, 16f);
-            state.apply(Element.PYRO, attacker.getUUID());
+            state.apply(Element.PYRO, attacker.getUUID(), mode);
             spawnReaction(level, target, "shatter", 14);
             return;
         }
@@ -37,8 +40,9 @@ public final class ElementalReactionEffects {
         if (!state.recordHit(attacker.getUUID(), incoming, attackGroup, target.tickCount)) {
             return;
         }
+        state.recordStellarApplication(incoming);
         ElementalBloomCore.trigger(level, target, incoming);
-        applyIncomingElement(level, attacker, target, incoming, false);
+        applyIncomingElement(level, attacker, target, incoming, false, mode, mastery);
     }
 
     /**
@@ -49,12 +53,14 @@ public final class ElementalReactionEffects {
      */
     private static void applyIncomingElement(ServerLevel level, Player attacker,
                                              LivingEntity target, Element incoming,
-                                             boolean swirlSpread) {
+                                             boolean swirlSpread, ElementalReactionEngine.Mode mode,
+                                             int mastery) {
         ElementalAuraState state = ((ElementalAuraHolder) target).genshinecraft$auras();
         if (swirlSpread) {
             ElementalBloomCore.trigger(level, target, incoming);
         }
-        ElementalReactionEngine.Plan plan = ElementalReactionEngine.preview(state, incoming);
+        ElementalReactionEngine.Plan plan = ElementalReactionEngine.preview(state, incoming,
+                swirlSpread ? ElementalReactionEngine.Mode.NORMAL : mode);
         // Hydro Swirl itself only spreads Wet; secondary Vaporize can still
         // damage targets already carrying Pyro.
         if (swirlSpread && (incoming != Element.HYDRO
@@ -69,7 +75,7 @@ public final class ElementalReactionEffects {
         }
         if (plan.reaction() == ElementalReactionEngine.Reaction.NONE) {
             if (incoming != Element.ANEMO && incoming != Element.GEO) {
-                state.apply(incoming, attacker.getUUID());
+                state.apply(incoming, attacker.getUUID(), mode);
             }
             return;
         }
@@ -91,7 +97,7 @@ public final class ElementalReactionEffects {
                 }
             }
             case ELECTRO_CHARGED -> {
-                state.apply(incoming, attacker.getUUID());
+                state.apply(incoming, attacker.getUUID(), mode);
                 state.beginElectroCharged(attacker.getUUID());
             }
             case FROZEN -> {
@@ -104,14 +110,59 @@ public final class ElementalReactionEffects {
                 dealDamage(level, target, plan.existing(), attacker.getUUID(), 1.8f);
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
                         target.getBoundingBox().inflate(3.0), e -> e != target && e.isAlive())) {
-                    applyIncomingElement(level, attacker, other, plan.existing(), true);
+                    applyIncomingElement(level, attacker, other, plan.existing(), true,
+                            ElementalReactionEngine.Mode.NORMAL, mastery);
                     spawnReaction(level, other, "swirl_" + elementKey(plan.existing()), 6);
                 }
             }
             case CRYSTALLIZE -> ElementalCrystals.drop(level, target, plan.existing());
+            case LUNAR_CHARGED -> {
+                state.apply(incoming, attacker.getUUID(), mode);
+                state.beginLunarCharged(attacker.getUUID(), mastery);
+
+            }
+            case LUNAR_BLOOM -> {
+                // Wiki: produces a normal Dendro Core and a shared Verdant Dew reserve,
+                // but the triggering Lunar-Bloom reaction does not directly damage.
+                ElementalBloomCore.spawn(level, target, attacker, true);
+                ((ElementalAuraHolder) attacker).genshinecraft$auras().collectVerdantDew();
+                spawnReaction(level, attacker, "lunar_dew", 8);
+            }
+            case LUNAR_CRYSTALLIZE -> {
+                ElementalCrystals.createMoonCages(level, target);
+                state.startMoonCages(attacker.getUUID(), mastery);
+            }
+            case STELLAR_CONDUCT -> {
+                // The reaction itself deals no damage; the six-second field boosts Cryo
+                // and Electro hits and lowers effective physical resistance.
+                state.beginStellarField(target, true);
+                for (LivingEntity nearby : level.getEntitiesOfClass(LivingEntity.class,
+                        target.getBoundingBox().inflate(4.5), LivingEntity::isAlive)) {
+                    if (nearby != target) {
+                        ((ElementalAuraHolder) nearby).genshinecraft$auras()
+                                .beginStellarField(nearby, false);
+                    }
+                }
+            }
+            case STELLAR_SWIRL -> {
+                dealSpecialDamage(level, target, Element.ANEMO, attacker.getUUID(), 0.75f,
+                        mastery, DamageNumbers.Gradient.STELLAR_WIND);
+                LivingEntity anchor = target;
+                for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
+                        target.getBoundingBox().inflate(5.0), LivingEntity::isAlive)) {
+                    if (((ElementalAuraHolder) other).genshinecraft$auras().stellarVortexTicks() > 0) {
+                        anchor = other;
+                        break;
+                    }
+                }
+                ElementalAuraState vortex = ((ElementalAuraHolder) anchor).genshinecraft$auras();
+                if (vortex.triggerStellarVortex(attacker.getUUID(), mastery)) {
+                    vortex.detonateStellarVortex(level, anchor);
+                }
+            }
             case BURNING -> {
                 state.beginBurning(attacker.getUUID());
-                state.apply(Element.PYRO, attacker.getUUID());
+                state.apply(Element.PYRO, attacker.getUUID(), mode);
             }
             case BLOOM -> ElementalBloomCore.spawn(level, target, attacker);
             case QUICKEN -> {
@@ -132,6 +183,72 @@ public final class ElementalReactionEffects {
         spawnReaction(level, target, effect, 12);
     }
 
+    /** Moon: lightning hits targets carrying both Hydro and Electro; every 40 ticks. */
+    public static void lunarThundercloud(ServerLevel level, LivingEntity center,
+                                         UUID owner, int mastery) {
+        for (LivingEntity enemy : level.getEntitiesOfClass(LivingEntity.class,
+                center.getBoundingBox().inflate(5.0), LivingEntity::isAlive)) {
+            ElementalAuraState targetState = ((ElementalAuraHolder) enemy).genshinecraft$auras();
+            if (targetState.has(Element.HYDRO) && targetState.has(Element.ELECTRO)) {
+                dealSpecialDamage(level, enemy, Element.ELECTRO, owner, 3.0f, mastery,
+                        DamageNumbers.Gradient.LUNAR_CHARGED);
+                spawnReaction(level, enemy, "lunar_charged", 8);
+            }
+        }
+    }
+
+    /** Count actual successful weapon/projectile attacks, not two new elemental reactions. */
+    public static void moonCageAttacked(ServerLevel level, LivingEntity target) {
+        ElementalAuraState.MoonVolley volley =
+                ((ElementalAuraHolder) target).genshinecraft$auras().moonCageAttackLanded();
+        if (volley == null) return;
+        ElementalCrystals.releaseMoonCages(level, target);
+        lunarMoondriftHarmony(level, target, volley.owner(), volley.mastery());
+    }
+
+    /** Three moon cages fire together after the second successful attack. */
+    private static void lunarMoondriftHarmony(ServerLevel level, LivingEntity center,
+                                              UUID owner, int mastery) {
+        for (LivingEntity enemy : level.getEntitiesOfClass(LivingEntity.class,
+                center.getBoundingBox().inflate(4.5), LivingEntity::isAlive)) {
+            dealSpecialDamage(level, enemy, Element.GEO, owner, 1.6f, mastery,
+                    DamageNumbers.Gradient.LUNAR_CRYSTALLIZE);
+            spawnReaction(level, enemy, "lunar_crystallize", 7);
+        }
+    }
+
+    /** Stellars: vortex detonates at 60 ticks or on its sixth Swirl, with a larger Lv.2 radius. */
+    public static void stellarVortexExplosion(ServerLevel level, LivingEntity center,
+                                              UUID owner, int stage, int mastery) {
+        double radius = stage >= 2 ? 4.5 : 3.0;
+        for (LivingEntity enemy : level.getEntitiesOfClass(LivingEntity.class,
+                center.getBoundingBox().inflate(radius), LivingEntity::isAlive)) {
+            dealSpecialDamage(level, enemy, Element.CRYO, owner,
+                    stage >= 2 ? 3f : 2f, mastery, DamageNumbers.Gradient.STELLAR_ICE);
+            spawnReaction(level, enemy, "stellar_vortex", stage >= 2 ? 13 : 8);
+            ((ElementalAuraHolder) enemy).genshinecraft$auras().apply(Element.CRYO, owner);
+        }
+        // Minecraft implementation of the Wiki's brief high-jump effect after detonation.
+        for (Player player : level.getEntitiesOfClass(Player.class,
+                center.getBoundingBox().inflate(radius), Player::isAlive)) {
+            //? if >=26.3 {
+            /*player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, 40, 1, false, true));
+            *///?} else {
+            player.addEffect(new MobEffectInstance(MobEffects.JUMP, 40, 1, false, true));
+            //?}
+        }
+    }
+
+    /** Wiki reactions can crit. Mod adaptation: 5% baseline, 1.5x crit and EM bonus. */
+    private static void dealSpecialDamage(ServerLevel level, LivingEntity target, Element element,
+                                          UUID owner, float base, int mastery, DamageNumbers.Gradient gradient) {
+        // Reactions target opponents; the triggering player cannot damage themself.
+        if (owner != null && owner.equals(target.getUUID())) return;
+        float bonus = 1f + (float) (6.0 * Math.max(0, mastery) / (Math.max(0, mastery) + 2000.0));
+        boolean critical = level.getRandom().nextFloat() < 0.05f;
+        dealDamage(level, target, element, owner, base * bonus * (critical ? 1.5f : 1f), gradient);
+    }
+
     public static void onPhysicalHit(ServerLevel level, LivingEntity target) {
         onFrozenAttack(level, target);
     }
@@ -146,6 +263,11 @@ public final class ElementalReactionEffects {
 
     public static void dealDamage(ServerLevel level, LivingEntity target, Element element,
                                   UUID owner, float amount) {
+        dealDamage(level, target, element, owner, amount, null);
+    }
+
+    public static void dealDamage(ServerLevel level, LivingEntity target, Element element,
+                                  UUID owner, float amount, DamageNumbers.Gradient gradient) {
         if (!target.isAlive() || amount <= 0) {
             return;
         }
@@ -161,7 +283,7 @@ public final class ElementalReactionEffects {
         //?}
         if (hurt && attacker != null) {
             DamageNumbers.afterHit(attacker, target, source, beforeHealth, beforeAbsorption,
-                    false, false);
+                    false, false, gradient);
         }
     }
 

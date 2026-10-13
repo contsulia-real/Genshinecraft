@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "genshinecraft:statue_of_the_seven",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 36,
+    "separation": 12,
+    "salt": 15011997
+  }
+}

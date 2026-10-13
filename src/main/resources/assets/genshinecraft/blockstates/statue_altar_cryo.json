@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "attempted=false": {
+      "model": "genshinecraft:block/statue_altar_cryo"
+    },
+    "attempted=true": {
+      "model": "genshinecraft:block/statue_altar_cryo_active"
+    }
+  }
+}

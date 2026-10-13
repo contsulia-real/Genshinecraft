@@ -2,11 +2,13 @@ package dev.genshinecraft.combat;
 
 import dev.genshinecraft.Genshinecraft;
 import dev.genshinecraft.item.CarrierData;
+import dev.genshinecraft.item.CarrierItems;
 import dev.genshinecraft.item.WeaponBinding;
 import dev.genshinecraft.particle.ElementalParticles;
 import dev.genshinecraft.element.ElementalAuraHolder;
 import dev.genshinecraft.element.ElementalReactionEffects;
 import dev.genshinecraft.element.ElementalReactionEngine;
+import dev.genshinecraft.element.ElementalAuraState;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 //? if >=26.3 {
@@ -21,6 +23,11 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+//? if >=26.3 {
+/*import net.minecraft.world.entity.boss.enderdragon.EnderDragonPart;
+*///?} else {
+import net.minecraft.world.entity.boss.EnderDragonPart;
+//?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import java.util.UUID;
@@ -125,6 +132,48 @@ public final class ElementalCombat {
         return new DamageSource(holder, projectile, player);
     }
 
+    /** Resolve the exact bound carrier; a switched weapon never changes an in-flight arrow. */
+    public static int reactionMastery(Player player, DamageSource source) {
+        CarrierData data = CarrierData.read(reactingCarrier(player, source));
+        return data == null ? 0 : data.elementalMastery();
+    }
+
+    public static ElementalReactionEngine.Mode reactionMode(Player player, DamageSource source) {
+        ItemStack carrier = reactingCarrier(player, source);
+        if (carrier.isEmpty()) return ElementalReactionEngine.Mode.NORMAL;
+        for (CarrierData.Element element : CarrierData.Element.values()) {
+            if (carrier.is(CarrierItems.MOON_WHEELS.get(element).get())) {
+                return ElementalReactionEngine.Mode.LUNAR;
+            }
+            if (carrier.is(CarrierItems.STAR_WEDGES.get(element).get())) {
+                return ElementalReactionEngine.Mode.STELLAR;
+            }
+        }
+        return ElementalReactionEngine.Mode.NORMAL;
+    }
+
+    private static ItemStack reactingCarrier(Player player, DamageSource source) {
+        ItemStack carrier = ItemStack.EMPTY;
+        if (source.getDirectEntity() instanceof Projectile projectile
+                && projectile instanceof ElementalProjectile bound) {
+            UUID original = bound.genshinecraft$carrierId();
+            if (original != null) {
+                var inventory = player.getInventory();
+                for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+                    ItemStack stack = inventory.getItem(slot);
+                    CarrierData data = CarrierData.read(stack);
+                    if (data != null && original.equals(data.id()) && data.usableBy(player.getUUID())) {
+                        carrier = stack;
+                        break;
+                    }
+                }
+            }
+        } else {
+            carrier = WeaponBinding.resolveStack(player.getMainHandItem(), player);
+        }
+        return carrier;
+    }
+
     /** Reaction damage has its own element color and attributes to its original player. */
     public static DamageSource reactionSource(ServerLevel level, CarrierData.Element element, Player attacker) {
         ResourceKey<DamageType> type = REACTION_TYPES.get(element);
@@ -138,11 +187,18 @@ public final class ElementalCombat {
         return new DamageSource(holder, attacker);
     }
 
+    /** Minecraft's Ender Dragon exposes non-living hit parts. Their auras belong to the dragon. */
+    private static LivingEntity auraTarget(Entity hitEntity) {
+        if (hitEntity instanceof LivingEntity living) return living;
+        if (hitEntity instanceof EnderDragonPart part) return part.parentMob;
+        return null;
+    }
+
     /** Modify the original attack amount before Minecraft applies armor and resistance. */
     public static float reactionDamage(Player player, Entity target, DamageSource source,
                                        float amount, String attackGroup) {
-        if (!(player.level() instanceof ServerLevel) || !(target instanceof LivingEntity living)
-                || amount <= 0) {
+        LivingEntity living = auraTarget(target);
+        if (!(player.level() instanceof ServerLevel) || living == null || amount <= 0) {
             return amount;
         }
         CarrierData.Element incoming = sourceElement(source);
@@ -150,21 +206,22 @@ public final class ElementalCombat {
         if (incoming == null) {
             // Shatter and Superconduct modify physical weapon damage; no bonus to elements.
             float multiplier = state.isSuperconductActive() ? 1.30f : 1.0f;
+            if (state.isStellarFieldActive()) multiplier *= 1.40f;
             if (state.isFrozen()) {
                 multiplier *= 1.25f;
             }
             return amount * multiplier;
         }
         if (!state.canApply(player.getUUID(), incoming, attackGroup, living.tickCount)) {
-            return amount;
+            return amount * state.stellarElementBonus(incoming);
         }
-        var plan = ElementalReactionEngine.preview(state, incoming);
+        var plan = ElementalReactionEngine.preview(state, incoming, reactionMode(player, source));
         float flatBonus = switch (plan.reaction()) {
             case AGGRAVATE -> 2f;
             case SPREAD -> 2.4f;
             default -> 0f;
         };
-        return amount * plan.damageMultiplier() + flatBonus;
+        return (amount * plan.damageMultiplier() + flatBonus) * state.stellarElementBonus(incoming);
     }
 
     static CarrierData.Element sourceElement(DamageSource source) {
@@ -191,16 +248,20 @@ public final class ElementalCombat {
         if (!(player.level() instanceof ServerLevel server)) {
             return;
         }
-        if (sourceElement(source) == null && target instanceof LivingEntity living) {
+        LivingEntity living = auraTarget(target);
+        if (sourceElement(source) == null && living != null) {
             ElementalReactionEffects.onPhysicalHit(server, living);
+            ElementalReactionEffects.moonCageAttacked(server, living);
             return;
         }
         for (CarrierData.Element element : CarrierData.Element.values()) {
             if (!source.is(ATTACK_TYPES.get(element))) {
                 continue;
             }
-            if (target instanceof LivingEntity living && living.isAlive()) {
-                ElementalReactionEffects.onHit(server, player, living, element, attackGroup);
+            if (living != null && living.isAlive()) {
+                ElementalReactionEffects.onHit(server, player, living, element, attackGroup,
+                        reactionMode(player, source), reactionMastery(player, source));
+                ElementalReactionEffects.moonCageAttacked(server, living);
             }
             // Keep the near-side placement, but restore the original subtle burst.
             double dx = player.getX() - target.getX();

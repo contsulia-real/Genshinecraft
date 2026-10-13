@@ -15,18 +15,15 @@
     "FrozenLivingMovementMixin",
     "FrozenPlayerActionsMixin",
     "FrozenMobAiMixin",
-    "PlayerOrganSlotMixin",
-    "MenuSlotAccessMixin",
-    "InventoryOrganSlotMixin",
-    "ServerPlayerOrganRespawnMixin"
+    "DragonFightBossEventAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
+    "BossOverlayEventsAccessor",
+    "BossAuraOverlayMixin",
     "DamageNumberVisibilityMixin",
-    "FrozenEntityTextureMixin",
-    "InventoryOrganFrameMixin",
-    "InventoryFramePositionAccessor"
+    "FrozenEntityTextureMixin"
   ]
 }

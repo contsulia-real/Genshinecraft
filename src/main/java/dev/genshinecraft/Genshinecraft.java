@@ -9,6 +9,12 @@ import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.CarrierItems;
 import dev.genshinecraft.item.WeaponBinding;
 import dev.genshinecraft.particle.ElementalParticles;
+import dev.genshinecraft.world.ElementOres;
+import dev.genshinecraft.world.StatueBlocks;
+import dev.genshinecraft.world.StatueOfferings;
+import dev.genshinecraft.world.StatueOfferingMenu;
+import dev.genshinecraft.world.StatueMenus;
+import dev.genshinecraft.world.StatueTeleportPacket;
 import net.minecraft.world.inventory.GrindstoneMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,6 +26,10 @@ public final class Genshinecraft {
     }
 
     public static void init() {
+        ElementOres.init();
+        StatueBlocks.init();
+        StatueMenus.init();
+        StatueTeleportPacket.init();
         CarrierItems.init();
         ElementalEntities.init();
         ElementalParticles.init();
@@ -38,10 +48,8 @@ public final class Genshinecraft {
                     CarrierData.claim(stack, player);
                 }
             }
-            ItemStack organ = ((dev.genshinecraft.item.OrganSlotHolder) player)
-                    .genshinecraft$organSlot().getItem(0);
-            if (CarrierItems.isCarrier(organ)) {
-                CarrierData.claim(organ, player);
+            if (player.tickCount % 20 == 0) {
+                StatueOfferings.syncCarriers(player);
             }
         });
     }

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "attempted=false": {
+      "model": "genshinecraft:block/statue_altar_electro"
+    },
+    "attempted=true": {
+      "model": "genshinecraft:block/statue_altar_electro_active"
+    }
+  }
+}

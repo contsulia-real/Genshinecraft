@@ -1,6 +1,6 @@
 {
   "textures": {
-    "layer0": "genshinecraft:item/geo_sigil"
+    "layer0": "genshinecraft:item/sigil/geo_sigil"
   },
   "parent": "minecraft:item/generated"
 }

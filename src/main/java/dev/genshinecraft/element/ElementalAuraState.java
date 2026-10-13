@@ -3,6 +3,13 @@ package dev.genshinecraft.element;
 import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.particle.ElementalParticles;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.entity.LightningBolt;
+//? if >=26.3 {
+/*import net.minecraft.world.entity.EntityTypes;
+*///?} else {
+import net.minecraft.world.entity.EntityType;
+//?}
 import net.minecraft.world.entity.LivingEntity;
 
 import java.util.EnumMap;
@@ -18,7 +25,8 @@ public final class ElementalAuraState {
     private static final float DECAY_PER_TICK = BASE_GAUGE / DEFAULT_TICKS;
     private static final int PARTICLE_INTERVAL = 8;
 
-    public record Aura(float gauge, int remainingTicks, UUID applier) {
+    public record Aura(float gauge, int remainingTicks, UUID applier,
+                       ElementalReactionEngine.Mode source) {
     }
 
     private record IcdKey(UUID attacker, CarrierData.Element element, String attackGroup) {
@@ -39,9 +47,34 @@ public final class ElementalAuraState {
     private int superconductTicks;
     private UUID burningOwner;
     private UUID electroOwner;
+    private int lunarChargedTicks;
+    private UUID lunarOwner;
+    private int lunarMastery;
+    private int verdantDew;
+    private int dewCooldown;
+    private int moondriftTicks;
+    private int moondriftCount;
+    private UUID moondriftOwner;
+    private int moondriftMastery;
+    private int stellarFieldTicks;
+    private boolean stellarFieldAnchor;
+    private double stellarFieldX;
+    private double stellarFieldY;
+    private double stellarFieldZ;
+    private int stellarStacks;
+    private int stellarStackWindow;
+    private int stellarVortexTicks;
+    private int stellarVortexTriggers;
+    private UUID vortexOwner;
+    private int vortexMastery;
 
     public Map<CarrierData.Element, Aura> snapshot() {
         return Map.copyOf(auras);
+    }
+
+    public ElementalReactionEngine.Mode sourceMode(CarrierData.Element element) {
+        Aura aura = auras.get(element);
+        return aura == null ? ElementalReactionEngine.Mode.NORMAL : aura.source();
     }
 
     public boolean has(CarrierData.Element element) {
@@ -60,6 +93,94 @@ public final class ElementalAuraState {
         return superconductTicks > 0;
     }
 
+    public boolean isStellarFieldActive() { return stellarFieldTicks > 0; }
+
+    public float stellarElementBonus(CarrierData.Element element) {
+        if (!isStellarFieldActive() || (element != CarrierData.Element.CRYO
+                && element != CarrierData.Element.ELECTRO)) return 1f;
+        return 1.2f + (stellarStacks > 0 ? 0.08f + Math.min(12, stellarStacks) * 0.01f : 0f);
+    }
+
+    public int verdantDew() { return verdantDew; }
+    public int stellarVortexTicks() { return stellarVortexTicks; }
+
+    public void beginLunarCharged(UUID owner, int mastery) {
+        lunarChargedTicks = 100;
+        lunarOwner = owner;
+        lunarMastery = Math.max(0, mastery);
+    }
+
+    /** Wiki: one Verdant Dew per 2.5s, up to three; Lunar-Bloom has no direct reaction hit. */
+    public void collectVerdantDew() {
+        if (dewCooldown <= 0) {
+            verdantDew = Math.min(3, verdantDew + 1);
+            dewCooldown = 50;
+        }
+    }
+
+    /** One Lunar-Crystallize creates three cages. Exactly two landed attacks activate them. */
+    public void startMoonCages(UUID owner, int mastery) {
+        if (moondriftTicks <= 0) moondriftCount = 0;
+        moondriftTicks = 160;
+        moondriftOwner = owner;
+        moondriftMastery = mastery;
+    }
+
+    public record MoonVolley(UUID owner, int mastery) {}
+
+    public MoonVolley moonCageAttackLanded() {
+        if (moondriftTicks <= 0 || ++moondriftCount < 2) return null;
+        MoonVolley volley = new MoonVolley(moondriftOwner, moondriftMastery);
+        moondriftTicks = 0;
+        moondriftCount = 0;
+        moondriftOwner = null;
+        moondriftMastery = 0;
+        return volley;
+    }
+
+    /** Six-second stellar domain; reapplication refreshes the domain. */
+    public void beginStellarField(LivingEntity origin, boolean anchor) {
+        if (anchor) {
+            stellarFieldTicks = 120;
+            stellarFieldAnchor = true;
+            stellarFieldX = origin.getX();
+            stellarFieldY = origin.getY();
+            stellarFieldZ = origin.getZ();
+        } else {
+            // Field membership expires shortly after leaving the stationary 6-second zone.
+            stellarFieldTicks = Math.max(stellarFieldTicks, 14);
+        }
+    }
+
+    public void recordStellarApplication(CarrierData.Element element) {
+        if (stellarFieldTicks <= 0
+                || (element != CarrierData.Element.CRYO && element != CarrierData.Element.ELECTRO)) return;
+        stellarStacks = Math.min(12, stellarStacks + 1);
+        stellarStackWindow = 80;
+    }
+
+    /** Stellar Vortex: 3 triggers upgrade; 6 triggers explode early, otherwise 3s. */
+    public boolean triggerStellarVortex(UUID owner, int mastery) {
+        if (stellarVortexTicks == 0) {
+            stellarVortexTicks = 60;
+            stellarVortexTriggers = 0;
+        }
+        vortexOwner = owner;
+        vortexMastery = Math.max(0, mastery);
+        stellarVortexTriggers++;
+        return stellarVortexTriggers >= 6;
+    }
+
+    public void detonateStellarVortex(ServerLevel level, LivingEntity center) {
+        if (stellarVortexTicks <= 0) return;
+        int stage = stellarVortexTriggers >= 3 ? 2 : 1;
+        UUID owner = vortexOwner;
+        stellarVortexTicks = 0;
+        stellarVortexTriggers = 0;
+        vortexOwner = null;
+        ElementalReactionEffects.stellarVortexExplosion(level, center, owner, stage, vortexMastery);
+    }
+
     public int statusTicks(String name) {
         return switch (name) {
             case "electro" -> electroChargedTicks;
@@ -67,8 +188,15 @@ public final class ElementalAuraState {
             case "quicken" -> quickenTicks;
             case "frozen" -> frozenTicks;
             case "superconduct" -> superconductTicks;
+            case "dew" -> verdantDew;
+            case "dew_cooldown" -> dewCooldown;
             default -> 0;
         };
+    }
+
+    public void restoreDew(int amount, int cooldown) {
+        verdantDew = Math.max(0, Math.min(3, amount));
+        dewCooldown = Math.max(0, Math.min(50, cooldown));
     }
 
     public void restoreStatuses(int electro, int burning, int quicken, int frozen, int superconduct) {
@@ -85,10 +213,15 @@ public final class ElementalAuraState {
     }
 
     public void apply(CarrierData.Element element, UUID applier) {
+        apply(element, applier, ElementalReactionEngine.Mode.NORMAL);
+    }
+
+    public void apply(CarrierData.Element element, UUID applier, ElementalReactionEngine.Mode source) {
         if (element != null) {
             Aura old = auras.get(element);
             if (old == null || old.gauge() <= BASE_GAUGE) {
-                auras.put(element, new Aura(BASE_GAUGE, DEFAULT_TICKS, applier));
+                auras.put(element, new Aura(BASE_GAUGE, DEFAULT_TICKS, applier,
+                        source == null ? ElementalReactionEngine.Mode.NORMAL : source));
             }
         }
     }
@@ -126,7 +259,7 @@ public final class ElementalAuraState {
             auras.remove(element);
         } else {
             int ticks = Math.max(1, Math.round(old.remainingTicks() * gauge / old.gauge()));
-            auras.put(element, new Aura(gauge, ticks, old.applier()));
+            auras.put(element, new Aura(gauge, ticks, old.applier(), old.source()));
         }
     }
 
@@ -178,10 +311,11 @@ public final class ElementalAuraState {
         superconductTicks = 100;
     }
 
-    public void restore(CarrierData.Element element, float gauge, int ticks, UUID applier) {
+    public void restore(CarrierData.Element element, float gauge, int ticks, UUID applier,
+                        ElementalReactionEngine.Mode source) {
         if (element != null && Float.isFinite(gauge) && gauge > 0f && gauge <= 16f
                 && ticks > 0 && ticks <= 2400) {
-            auras.put(element, new Aura(gauge, ticks, applier));
+            auras.put(element, new Aura(gauge, ticks, applier, source == null ? ElementalReactionEngine.Mode.NORMAL : source));
         }
     }
 
@@ -196,6 +330,23 @@ public final class ElementalAuraState {
         superconductTicks = 0;
         burningOwner = null;
         electroOwner = null;
+        lunarChargedTicks = 0;
+        lunarOwner = null;
+        lunarMastery = 0;
+        verdantDew = 0;
+        dewCooldown = 0;
+        moondriftTicks = 0;
+        moondriftCount = 0;
+        moondriftOwner = null;
+        moondriftMastery = 0;
+        stellarFieldTicks = 0;
+        stellarFieldAnchor = false;
+        stellarStacks = 0;
+        stellarStackWindow = 0;
+        stellarVortexTicks = 0;
+        stellarVortexTriggers = 0;
+        vortexOwner = null;
+        vortexMastery = 0;
     }
 
     public void tick(LivingEntity entity) {
@@ -224,6 +375,85 @@ public final class ElementalAuraState {
                     ElementalReactionEffects.dealDamage(server, entity, CarrierData.Element.ELECTRO,
                             electroOwner, 1.6f);
                 }
+            }
+        }
+
+        if (dewCooldown > 0) dewCooldown--;
+        if (lunarChargedTicks > 0) {
+            lunarChargedTicks--;
+            if (!has(CarrierData.Element.HYDRO) || !has(CarrierData.Element.ELECTRO)) {
+                lunarChargedTicks = 0;
+            } else {
+                double cloudY = entity.getY() + entity.getBbHeight() + 1.15;
+                if (entity.tickCount % 4 == 0) {
+                    // Vanilla Minecraft cloud and electric particles, no custom thundercloud entity.
+                    server.sendParticles(ParticleTypes.CLOUD, entity.getX(), cloudY,
+                            entity.getZ(), 13, 0.85, 0.18, 0.85, 0.012);
+                    server.sendParticles(ParticleTypes.ELECTRIC_SPARK, entity.getX(), cloudY,
+                            entity.getZ(), 4, 0.75, 0.16, 0.75, 0.015);
+                }
+                if (entity.tickCount % 40 == 0) {
+                    //? if >=26.3 {
+                    /*LightningBolt lightning = new LightningBolt(EntityTypes.LIGHTNING_BOLT, server);
+                    *///?} else {
+                    LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(server);
+                    //?}
+                    if (lightning != null) {
+                        lightning.setPos(entity.getX(), entity.getY(), entity.getZ());
+                        lightning.setVisualOnly(true);
+                        server.addFreshEntity(lightning);
+                    }
+                    ElementalReactionEffects.lunarThundercloud(server, entity, lunarOwner, lunarMastery);
+                }
+            }
+        }
+        if (moondriftTicks > 0) {
+            moondriftTicks--;
+            if (entity.tickCount % 12 == 0) {
+                server.sendParticles(ElementalParticles.reaction("lunar_moondrift"),
+                        entity.getX(), entity.getY() + entity.getBbHeight() * 0.8, entity.getZ(),
+                        3, 0.8, 0.3, 0.8, 0.015);
+            }
+            if (moondriftTicks == 0) {
+                moondriftCount = 0;
+                moondriftOwner = null;
+                moondriftMastery = 0;
+            }
+        }
+        if (stellarFieldTicks > 0) {
+            if (stellarFieldAnchor && entity.tickCount % 8 == 0) {
+                var zone = new net.minecraft.world.phys.AABB(
+                        stellarFieldX - 4.5, stellarFieldY - 3.0, stellarFieldZ - 4.5,
+                        stellarFieldX + 4.5, stellarFieldY + 5.0, stellarFieldZ + 4.5);
+                for (LivingEntity nearby : server.getEntitiesOfClass(LivingEntity.class,
+                        zone, LivingEntity::isAlive)) {
+                    if (nearby != entity) {
+                        ((ElementalAuraHolder) nearby).genshinecraft$auras()
+                                .beginStellarField(nearby, false);
+                    }
+                }
+            }
+            stellarFieldTicks--;
+            if (stellarFieldTicks == 0) stellarFieldAnchor = false;
+            if (stellarStackWindow > 0) stellarStackWindow--;
+            if (stellarStackWindow == 0) stellarStacks = 0;
+            if (entity.tickCount % 12 == 0) {
+                server.sendParticles(ElementalParticles.reaction("stellar_prism"),
+                        entity.getX(), entity.getY() + 0.1, entity.getZ(),
+                        5, 1.8, 0.08, 1.8, 0.01);
+            }
+        }
+        if (stellarVortexTicks > 0) {
+            stellarVortexTicks--;
+            if (entity.tickCount % 4 == 0) {
+                server.sendParticles(ElementalParticles.reaction("stellar_vortex"),
+                        entity.getX(), entity.getY() + entity.getBbHeight() * 0.85, entity.getZ(),
+                        stellarVortexTriggers >= 3 ? 8 : 4, 0.65, 0.4, 0.65, 0.03);
+            }
+            if (stellarVortexTicks == 0) {
+                // Use one active tick for the explosion method, then clear the state.
+                stellarVortexTicks = 1;
+                detonateStellarVortex(server, entity);
             }
         }
 
@@ -275,7 +505,7 @@ public final class ElementalAuraState {
                 it.remove();
                 continue;
             }
-            active.setValue(new Aura(gauge, remaining, old.applier()));
+            active.setValue(new Aura(gauge, remaining, old.applier(), old.source()));
             if (entity.tickCount % PARTICLE_INTERVAL == 0) {
                 server.sendParticles(ElementalParticles.AURAS.get(active.getKey()).get(),
                         entity.getX(), entity.getY() + entity.getBbHeight() * 0.65, entity.getZ(),
@@ -288,6 +518,14 @@ public final class ElementalAuraState {
                         1, entity.getBbWidth() * 0.4 + 0.06,
                         entity.getBbHeight() * 0.10, entity.getBbWidth() * 0.4 + 0.06, 0.003);
             }
+        }
+        AuraIconHolder icons = (AuraIconHolder) entity;
+        int mask = AuraStatusIcons.mask(auras.keySet());
+        icons.genshinecraft$setAuraIcons(mask);
+        if (mask == 0) {
+            icons.genshinecraft$setBossBarId("");
+        } else if (entity.tickCount % 10 == 0) {
+            icons.genshinecraft$setBossBarId(BossBarAssociation.id(server, entity));
         }
     }
 }

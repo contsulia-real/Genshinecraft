@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "genshinecraft:block/statue_altar_cryo_active"
+  }
+}

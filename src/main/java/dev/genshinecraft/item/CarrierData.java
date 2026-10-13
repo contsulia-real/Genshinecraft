@@ -88,6 +88,28 @@ public record CarrierData(
         return stack;
     }
 
+    /** Statue-issued carrier; skill and burst remain unassigned until implemented. */
+    public static ItemStack createFromStatue(Item item, Element element, String statue) {
+        if (!CarrierItems.isCarrier(item)
+                || element == null || CarrierItems.fixedElement(item) != element
+                || statue == null || statue.isBlank()) {
+            throw new IllegalArgumentException("Invalid statue reward");
+        }
+        ItemStack stack = new ItemStack(item);
+        write(stack, new CarrierData(UUID.randomUUID(), element, "", "",
+                0, 0, 0, statue, null, "", false));
+        return stack;
+    }
+
+    public static void setMastery(ItemStack stack, int target) {
+        CarrierData data = read(stack);
+        if (data != null && target != data.elementalMastery()) {
+            write(stack, new CarrierData(data.id(), data.element(), data.skill(), data.burst(),
+                    data.skillLevel(), data.burstLevel(), target,
+                    data.statue(), data.owner(), data.ownerName(), data.abandoned()));
+        }
+    }
+
     public static CarrierData read(ItemStack stack) {
         if (!CarrierItems.isCarrier(stack)) {
             return null;

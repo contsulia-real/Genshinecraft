@@ -7,8 +7,12 @@ public final class ElementalReactionEngine {
     public enum Reaction {
         NONE, VAPORIZE, MELT, OVERLOADED, SUPERCONDUCT, ELECTRO_CHARGED,
         FROZEN, SWIRL, CRYSTALLIZE, BURNING, BLOOM, QUICKEN, AGGRAVATE, SPREAD,
-        BURGEON, HYPERBLOOM
+        BURGEON, HYPERBLOOM,
+        LUNAR_CHARGED, LUNAR_BLOOM, LUNAR_CRYSTALLIZE,
+        STELLAR_CONDUCT, STELLAR_SWIRL
     }
+
+    public enum Mode { NORMAL, LUNAR, STELLAR }
 
     public record Plan(Reaction reaction, Element existing, Element incoming,
                        float gaugeCost, float damageMultiplier) {
@@ -18,6 +22,38 @@ public final class ElementalReactionEngine {
     }
 
     private ElementalReactionEngine() {
+    }
+
+    /** A special reaction applies if either participating aura came from its carrier. */
+    public static Plan preview(ElementalAuraState state, Element incoming, Mode incomingMode) {
+        Plan normal = preview(state, incoming);
+        for (Element existing : Element.values()) {
+            if (!state.has(existing) || existing == incoming) continue;
+            Plan candidate = pair(existing, incoming);
+            Mode oldMode = state.sourceMode(existing);
+            Reaction converted = switch (candidate.reaction()) {
+                case ELECTRO_CHARGED -> lunar(oldMode, incomingMode) ? Reaction.LUNAR_CHARGED : Reaction.ELECTRO_CHARGED;
+                case BLOOM -> lunar(oldMode, incomingMode) ? Reaction.LUNAR_BLOOM : Reaction.BLOOM;
+                case CRYSTALLIZE -> existing == Element.HYDRO && lunar(oldMode, incomingMode)
+                        ? Reaction.LUNAR_CRYSTALLIZE : Reaction.CRYSTALLIZE;
+                case SUPERCONDUCT -> stellar(oldMode, incomingMode) ? Reaction.STELLAR_CONDUCT : Reaction.SUPERCONDUCT;
+                case SWIRL -> existing == Element.CRYO && stellar(oldMode, incomingMode)
+                        ? Reaction.STELLAR_SWIRL : Reaction.SWIRL;
+                default -> candidate.reaction();
+            };
+            if (converted != candidate.reaction()) {
+                return new Plan(converted, existing, incoming, candidate.gaugeCost(), 1f);
+            }
+        }
+        return normal;
+    }
+
+    private static boolean lunar(Mode first, Mode second) {
+        return first == Mode.LUNAR || second == Mode.LUNAR;
+    }
+
+    private static boolean stellar(Mode first, Mode second) {
+        return first == Mode.STELLAR || second == Mode.STELLAR;
     }
 
     public static Plan preview(ElementalAuraState state, Element incoming) {

@@ -7,5 +7,6 @@ public final class GenshinecraftFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         Genshinecraft.init();
+        ElementOreWorldgen.init();
     }
 }

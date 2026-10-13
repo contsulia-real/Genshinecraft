@@ -5,6 +5,14 @@ import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.mixin.DamageNumberDisplayAccessor;
 import dev.genshinecraft.mixin.DamageNumberTextAccessor;
 import net.minecraft.network.chat.Component;
+//? if >=26.3 {
+/*import net.minecraft.network.chat.FontDescription;
+import net.minecraft.resources.Identifier;
+*///?} else if =1.21.1 {
+import net.minecraft.resources.ResourceLocation;
+//?} else {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Display;
@@ -28,6 +36,40 @@ import java.util.WeakHashMap;
 public final class DamageNumbers {
     public static final String MARKER = "genshinecraft:damage_number";
     private static final int PHYSICAL_COLOR = 0xFFFFFF;
+    private static final String DIGITS = "0123456789.-";
+    public enum Gradient {
+        LUNAR_CHARGED("lunar_charged"), LUNAR_BLOOM("lunar_bloom"),
+        LUNAR_CRYSTALLIZE("lunar_crystallize"), STELLAR_CONDUCT("stellar_conduct"),
+        STELLAR_WIND("stellar_wind"), STELLAR_ICE("stellar_ice");
+
+        final String font;
+        Gradient(String font) { this.font = font; }
+    }
+
+    private static String glyphs(String number) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < number.length(); i++) {
+            int index = DIGITS.indexOf(number.charAt(i));
+            result.append(index < 0 ? number.charAt(i) : (char) (0xe000 + index));
+        }
+        return result.toString();
+    }
+
+    private static Component styledValue(String number, int color, Gradient gradient, boolean outline) {
+        if (gradient == null) return Component.literal(number).withStyle(style -> style.withColor(color));
+        String name = outline ? "reaction_shadow" : gradient.font;
+        //? if >=26.3 {
+        /*return Component.literal(glyphs(number)).withStyle(style -> style.withColor(0xffffff)
+                .withFont(new FontDescription.Resource(
+                        Identifier.fromNamespaceAndPath("genshinecraft", name))));
+        *///?} else if =1.21.1 {
+        return Component.literal(glyphs(number)).withStyle(style -> style.withColor(0xffffff)
+                .withFont(ResourceLocation.fromNamespaceAndPath("genshinecraft", name)));
+        //?} else {
+        /*return Component.literal(glyphs(number)).withStyle(style -> style.withColor(0xffffff)
+                .withFont(new ResourceLocation("genshinecraft", name)));
+        *///?}
+    }
     private static final Map<ServerPlayer, RecentHit> RECENT_MELEE = new WeakHashMap<>();
 
     private record RecentHit(Entity target, long tick, double x, double y, double z, int color) {
@@ -40,6 +82,12 @@ public final class DamageNumbers {
     public static void afterHit(Player attacker, Entity target, DamageSource source,
                                 float beforeHealth, float beforeAbsorption,
                                 boolean critical, boolean melee) {
+        afterHit(attacker, target, source, beforeHealth, beforeAbsorption, critical, melee, null);
+    }
+
+    public static void afterHit(Player attacker, Entity target, DamageSource source,
+                                float beforeHealth, float beforeAbsorption,
+                                boolean critical, boolean melee, Gradient gradient) {
         if (!(attacker instanceof ServerPlayer player) || !(target instanceof LivingEntity living)
                 || !(attacker.level() instanceof ServerLevel server)) {
             return;
@@ -50,15 +98,21 @@ public final class DamageNumbers {
             return;
         }
         int color = color(source);
+        if (gradient == null && living instanceof dev.genshinecraft.element.ElementalAuraHolder holder
+                && holder.genshinecraft$auras().isStellarFieldActive()
+                && (ElementalCombat.sourceElement(source) == CarrierData.Element.CRYO
+                    || ElementalCombat.sourceElement(source) == CarrierData.Element.ELECTRO)) {
+            gradient = Gradient.STELLAR_CONDUCT;
+        }
         double x = target.getX() + (Math.random() - 0.5) * 0.25;
         double y = target.getY() + target.getBbHeight() + 0.23;
         double z = target.getZ() + (Math.random() - 0.5) * 0.25;
         String number = Math.abs(dealt - Math.round(dealt)) < 0.05f
                 ? Integer.toString(Math.round(dealt))
                 : String.format(Locale.ROOT, "%.1f", dealt);
-        spawnOutlined(server, x, y, z, number, color, false);
+        spawnOutlined(server, x, y, z, number, color, false, gradient);
         if (critical) {
-            spawnOutlined(server, x, y, z, "✦", color, true);
+            spawnOutlined(server, x, y, z, "✦", color, true, null);
         } else if (melee) {
             RECENT_MELEE.put(player, new RecentHit(target, server.getGameTime(), x, y, z, color));
         }
@@ -91,12 +145,18 @@ public final class DamageNumbers {
     /** Two depth-separated layers create a deep charcoal silhouette without a box. */
     private static void spawnOutlined(ServerLevel server, double x, double y, double z,
                                       String value, int color, boolean icon) {
-        spawn(server, x, y, z, value, 0x1B1724, icon, true);
-        spawn(server, x, y, z, value, color, icon, false);
+        spawnOutlined(server, x, y, z, value, color, icon, null);
+    }
+
+    private static void spawnOutlined(ServerLevel server, double x, double y, double z,
+                                      String value, int color, boolean icon, Gradient gradient) {
+        spawn(server, x, y, z, value, 0x1B1724, icon, true, gradient);
+        spawn(server, x, y, z, value, color, icon, false, gradient);
     }
 
     private static void spawn(ServerLevel server, double x, double y, double z,
-                              String value, int color, boolean icon, boolean outline) {
+                              String value, int color, boolean icon, boolean outline,
+                              Gradient gradient) {
         //? if >=26.3 {
         /*Display.TextDisplay display = new Display.TextDisplay(EntityTypes.TEXT_DISPLAY, server);
         *///?} else {
@@ -109,7 +169,7 @@ public final class DamageNumbers {
         display.setCustomNameVisible(false);
 
         ((DamageNumberTextAccessor) display).genshinecraft$text(
-                Component.literal(value).withStyle(style -> style.withColor(color)));
+                styledValue(value, color, gradient, outline));
         ((DamageNumberTextAccessor) display).genshinecraft$background(0);
         ((DamageNumberDisplayAccessor) display).genshinecraft$billboard(Display.BillboardConstraints.CENTER);
         // The dark silhouette is slightly larger and sits behind the colored text.

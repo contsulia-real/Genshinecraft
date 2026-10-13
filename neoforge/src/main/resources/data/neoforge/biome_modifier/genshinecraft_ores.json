@@ -1,0 +1,14 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "genshinecraft:ore_anemo",
+    "genshinecraft:ore_geo",
+    "genshinecraft:ore_electro",
+    "genshinecraft:ore_dendro",
+    "genshinecraft:ore_hydro",
+    "genshinecraft:ore_pyro",
+    "genshinecraft:ore_cryo"
+  ],
+  "step": "underground_ores"
+}

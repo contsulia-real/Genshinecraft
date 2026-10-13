@@ -1,6 +1,6 @@
 {
   "textures": {
-    "layer0": "genshinecraft:item/cryo_sigil"
+    "layer0": "genshinecraft:item/sigil/cryo_sigil"
   },
   "parent": "minecraft:item/generated"
 }

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "attempted=false": {
+      "model": "genshinecraft:block/statue_altar_pyro"
+    },
+    "attempted=true": {
+      "model": "genshinecraft:block/statue_altar_pyro_active"
+    }
+  }
+}

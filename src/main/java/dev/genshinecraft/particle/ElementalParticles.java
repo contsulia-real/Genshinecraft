@@ -34,7 +34,9 @@ public final class ElementalParticles {
                 "burning", "bloom", "burgeon", "hyperbloom",
                 "quicken", "aggravate", "spread", "vaporize", "melt",
                 "swirl_pyro", "swirl_hydro", "swirl_electro", "swirl_cryo",
-                "crystallize_pyro", "crystallize_hydro", "crystallize_electro", "crystallize_cryo"}) {
+                "crystallize_pyro", "crystallize_hydro", "crystallize_electro", "crystallize_cryo",
+                "lunar_charged", "lunar_bloom", "lunar_crystallize", "lunar_dew", "lunar_moondrift",
+                "stellar_conduct", "stellar_swirl", "stellar_vortex", "stellar_prism"}) {
             effects.put(id, PARTICLES.register("reaction_" + id, () -> new SimpleParticleType(true) {
             }));
         }

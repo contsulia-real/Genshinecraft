@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "genshinecraft:font/reaction_shadow.png",
+      "ascent": 15,
+      "height": 16,
+      "chars": [
+        ""
+      ]
+    }
+  ]
+}

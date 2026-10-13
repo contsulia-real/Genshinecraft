@@ -1,84 +1,79 @@
 package dev.genshinecraft.client;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.event.EventResult;
 import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
 import dev.genshinecraft.element.ElementalEntities;
-import net.minecraft.client.renderer.entity.DisplayRenderer;
-import net.minecraft.world.entity.Display;
-import net.minecraft.world.entity.EntityType;
+import dev.genshinecraft.client.entity.BloomCoreRenderer;
+import dev.genshinecraft.client.entity.CrystalShardRenderer;
 import dev.architectury.event.events.client.ClientScreenInputEvent;
 import dev.architectury.event.events.client.ClientGuiEvent;
-import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.event.events.client.ClientTooltipEvent;
-import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
-import dev.genshinecraft.Genshinecraft;
 import dev.genshinecraft.item.CarrierData;
 import dev.genshinecraft.item.CarrierItems;
 import dev.genshinecraft.item.WeaponBinding;
+import dev.genshinecraft.world.StatueMenus;
+import dev.architectury.registry.menu.MenuRegistry;
+import dev.architectury.event.events.client.ClientTickEvent;
+import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
+import dev.genshinecraft.world.StatueTeleportPacket;
+import net.minecraft.client.KeyMapping;
+//? if >=26.3 {
+/*import net.minecraft.resources.Identifier;
+*///?}
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 //? if >=1.21.1 {
 import net.minecraft.core.component.DataComponents;
 //?}
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.inventory.Slot;
-//? if =1.20.1 {
-/*import net.minecraft.resources.ResourceLocation;
-*///?} else if =1.21.1 {
-import net.minecraft.resources.ResourceLocation;
-//?} else {
-/*import net.minecraft.resources.Identifier;
-*///?}
-//? if >=26.3 {
-/*import net.minecraft.resources.Identifier;
-*///?}
 import net.minecraft.world.item.ItemStack;
-//? if <26.3 {
-import org.lwjgl.glfw.GLFW;
-//?}
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 public final class GenshinecraftClient {
-    private static final KeyMapping SWITCH_CARRIER = new KeyMapping(
-            //? if >=26.3 {
-            /*"key.genshinecraft.switch_carrier", InputConstants.Type.KEYBOARD, InputConstants.KEY_V,
-            *///?} else {
-            "key.genshinecraft.switch_carrier", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V,
-            //?}
-            //? if >=26.3 {
-            /*KeyMapping.Category.register(Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, "carrier"))
-            *///?} else {
-            "key.categories.genshinecraft"
-            //?}
-    );
-
-    private static UUID selectedId;
-    private static UUID currentPlayerId;
+    //? if >=26.3 {
+    /*private static final KeyMapping TELEPORT = new KeyMapping("key.genshinecraft.teleport",
+            86, KeyMapping.Category.register(
+                    Identifier.fromNamespaceAndPath("genshinecraft", "controls")));
+    *///?} else {
+    private static final KeyMapping TELEPORT =
+            new KeyMapping("key.genshinecraft.teleport", 86, "key.categories.genshinecraft");
+    //?}
 
     private GenshinecraftClient() {
     }
 
-    @SuppressWarnings("unchecked")
-    private static EntityType<Display.TextDisplay> displayType(EntityType<?> type) {
-        return (EntityType<Display.TextDisplay>) type;
-    }
-
     public static void init() {
         DamageNumberSettings.load();
-        EntityRendererRegistry.register(() -> displayType(ElementalEntities.DENDRO_CORE.get()),
-                context -> new DisplayRenderer.TextDisplayRenderer(context) {});
-        EntityRendererRegistry.register(() -> displayType(ElementalEntities.CRYSTAL_SHARD.get()),
-                context -> new DisplayRenderer.TextDisplayRenderer(context) {});
-        KeyMappingRegistry.register(SWITCH_CARRIER);
+        KeyMappingRegistry.register(TELEPORT);
+        ClientTickEvent.CLIENT_POST.register(client -> {
+            //? if >=26.3 {
+            /*boolean inGame = client.gui.screen() == null;
+            *///?} else {
+            boolean inGame = client.screen == null;
+            //?}
+            while (TELEPORT.consumeClick()) {
+                if (inGame && client.player != null) {
+                    ItemStack held = client.player.getMainHandItem();
+                    if (held.is(CarrierItems.MOON_SIGIL.get()) || CarrierItems.isCarrier(held)) {
+                        StatueTeleportPacket.send();
+                    }
+                }
+            }
+        });
+        //? if >=26.3 {
+        /*dev.architectury.registry.client.gui.MenuScreenRegistry.registerScreenFactory(
+                StatueMenus.TYPE.get(), StatueOfferingScreen::new);
+        *///?} else {
+        MenuRegistry.registerScreenFactory(StatueMenus.TYPE.get(), StatueOfferingScreen::new);
+        //?}
+        EntityRendererRegistry.register(ElementalEntities.DENDRO_CORE::get, BloomCoreRenderer::new);
+        EntityRendererRegistry.register(ElementalEntities.CRYSTAL_SHARD::get, CrystalShardRenderer::new);
         // The creative inventory's item-picker tabs bypass vanilla server-side slot
         // clicks. Intercept only clicks on real player inventory/hotbar slots.
         //? if >=26.3 {
@@ -93,32 +88,6 @@ public final class GenshinecraftClient {
         *///?} else {
         ClientTooltipEvent.ITEM.register((stack, lines, context, flag) -> appendBindingTooltip(stack, lines));
         //?}
-        ClientTickEvent.CLIENT_POST.register(client -> {
-            if (client.player == null) {
-                selectedId = null;
-                currentPlayerId = null;
-                return;
-            }
-            UUID playerId = client.player.getUUID();
-            if (!playerId.equals(currentPlayerId)) {
-                currentPlayerId = playerId;
-                selectedId = null;
-            }
-
-            List<CarrierEntry> carriers = availableCarriers(client);
-            int index = currentIndex(carriers);
-            while (SWITCH_CARRIER.consumeClick()) {
-                //? if >=26.3 {
-                /*boolean gameActive = client.gui.screen() == null;
-                *///?} else {
-                boolean gameActive = client.screen == null;
-                //?}
-                if (gameActive && index >= 0) {
-                    index = (index + 1) % carriers.size();
-                    selectedId = carriers.get(index).data().id();
-                }
-            }
-        });
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> {
             Minecraft client = Minecraft.getInstance();
             //? if >=26.3 {
@@ -130,22 +99,20 @@ public final class GenshinecraftClient {
                 return;
             }
 
-            List<CarrierEntry> carriers = availableCarriers(client);
-            int index = currentIndex(carriers);
-            if (index < 0) {
+            AuraIconOverlay.render(graphics);
+
+            ItemStack boundCarrier = WeaponBinding.resolveStack(client.player.getMainHandItem(), client.player);
+            if (boundCarrier.isEmpty()) {
                 return;
             }
 
-            CarrierEntry selected = carriers.get(index);
-            int x = Math.max(4, graphics.guiWidth() - 96);
+            int x = Math.max(4, graphics.guiWidth() - 24);
             int y = Math.max(4, (graphics.guiHeight() - 16) / 2);
             //? if >=26.3 {
-            /*graphics.item(selected.stack(), x, y);
+            /*graphics.item(boundCarrier, x, y);
             *///?} else {
-            graphics.renderItem(selected.stack(), x, y);
+            graphics.renderItem(boundCarrier, x, y);
             //?}
-            drawEnergyBar(graphics, selected.data().element(), x + 20, y + 4,
-                    client.level == null ? 0L : client.level.getGameTime());
         });
     }
 
@@ -218,10 +185,22 @@ public final class GenshinecraftClient {
             lines.add(name.isEmpty()
                     ? Component.translatable("tooltip.genshinecraft.no_owner").withStyle(ChatFormatting.GRAY)
                     : Component.translatable("tooltip.genshinecraft.owner", name).withStyle(ChatFormatting.GRAY));
+            if (organ != null && !organ.statue().isBlank()) {
+                lines.add(Component.translatable("tooltip.genshinecraft.teleport_carrier",
+                        TELEPORT.getTranslatedKeyMessage()).withStyle(ChatFormatting.GRAY));
+            }
+            if (organ != null && organ.elementalMastery() > 0) {
+                lines.add(Component.translatable("tooltip.genshinecraft.offering_mastery",
+                        organ.elementalMastery()).withStyle(ChatFormatting.GRAY));
+            }
+        }
+        if (stack.is(CarrierItems.MOON_SIGIL.get())) {
+            lines.add(Component.translatable("tooltip.genshinecraft.teleport_moon",
+                    TELEPORT.getTranslatedKeyMessage()).withStyle(ChatFormatting.GRAY));
         }
         if (CarrierItems.isVision(stack)) {
             lines.add(Component.translatable("tooltip.genshinecraft.vision_style",
-                    Component.translatable("region.genshinecraft.mondstadt"))
+                    Component.translatable("region.genshinecraft." + CarrierItems.visionStyle(stack)))
                     .withStyle(ChatFormatting.GRAY));
         }
         WeaponBinding binding = WeaponBinding.read(stack);
@@ -251,10 +230,7 @@ public final class GenshinecraftClient {
                 return customName;
             }
         }
-        ItemStack equipped = ((dev.genshinecraft.item.OrganSlotHolder) client.player)
-                .genshinecraft$organSlot().getItem(0);
-        Component equippedName = customNameIfBound(equipped, binding, playerId);
-        return equippedName == null ? fallback : equippedName;
+        return fallback;
     }
 
     private static Component customNameIfBound(ItemStack stack, WeaponBinding binding, UUID playerId) {
@@ -273,71 +249,6 @@ public final class GenshinecraftClient {
         }
         //?}
         return stack.getHoverName();
-    }
-
-    private static int currentIndex(List<CarrierEntry> carriers) {
-        if (carriers.isEmpty()) {
-            selectedId = null;
-            return -1;
-        }
-        for (int i = 0; i < carriers.size(); i++) {
-            if (carriers.get(i).data().id().equals(selectedId)) {
-                return i;
-            }
-        }
-        selectedId = carriers.get(0).data().id();
-        return 0;
-    }
-
-    private static List<CarrierEntry> availableCarriers(Minecraft client) {
-        List<CarrierEntry> carriers = new ArrayList<>();
-        UUID ownerId = client.player.getUUID();
-        var inventory = client.player.getInventory();
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-            ItemStack stack = inventory.getItem(slot);
-            CarrierData data = CarrierData.read(stack);
-            if (data != null && data.usableBy(ownerId)) {
-                carriers.add(new CarrierEntry(stack, data));
-            }
-        }
-        ItemStack equipped = ((dev.genshinecraft.item.OrganSlotHolder) client.player)
-                .genshinecraft$organSlot().getItem(0);
-        CarrierData organ = CarrierData.read(equipped);
-        if (organ != null && organ.usableBy(ownerId)) {
-            carriers.add(new CarrierEntry(equipped, organ));
-        }
-        return carriers;
-    }
-
-    private record CarrierEntry(ItemStack stack, CarrierData data) {
-    }
-    private static void drawEnergyBar(
-            //? if >=26.3 {
-            /*net.minecraft.client.gui.GuiGraphicsExtractor graphics,
-            *///?} else {
-            net.minecraft.client.gui.GuiGraphics graphics,
-            //?}
-            CarrierData.Element element, int x, int y, long gameTime) {
-        String name = element.name().toLowerCase(Locale.ROOT);
-        String base = "textures/item/energy/bar/energy_bar_" + name;
-        int frame = (int) ((gameTime / 3L) % 8L); // energy_bar_*_fill.png.mcmeta: frametime 3, eight 64x8 frames
-
-        //? if >=26.3 {
-        /*Identifier background = Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, base + "_bg.png");
-        Identifier fill = Identifier.fromNamespaceAndPath(Genshinecraft.MOD_ID, base + "_fill.png");
-        graphics.blit(background, x, y, 64, 8, 0f, 1f, 0f, 1f);
-        graphics.blit(fill, x, y, 64, 8, 0f, 1f, frame / 8f, (frame + 1) / 8f);
-        *///?} else if =1.21.1 {
-        ResourceLocation background = ResourceLocation.fromNamespaceAndPath(Genshinecraft.MOD_ID, base + "_bg.png");
-        ResourceLocation fill = ResourceLocation.fromNamespaceAndPath(Genshinecraft.MOD_ID, base + "_fill.png");
-        graphics.blit(background, x, y, 0f, 0f, 64, 8, 64, 8);
-        graphics.blit(fill, x, y, 0f, (float) (frame * 8), 64, 8, 64, 64);
-        //?} else {
-        /*ResourceLocation background = new ResourceLocation(Genshinecraft.MOD_ID, base + "_bg.png");
-        ResourceLocation fill = new ResourceLocation(Genshinecraft.MOD_ID, base + "_fill.png");
-        graphics.blit(background, x, y, 0f, 0f, 64, 8, 64, 8);
-        graphics.blit(fill, x, y, 0f, (float) (frame * 8), 64, 8, 64, 64);
-        *///?}
     }
 
 }

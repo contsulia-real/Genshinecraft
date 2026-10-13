@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "genshinecraft:item/crystal_shard/crystal_shard_electro"
+  }
+}

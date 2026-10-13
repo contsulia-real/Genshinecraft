@@ -1,7 +1,12 @@
 package dev.genshinecraft.mixin;
 
+import dev.genshinecraft.element.AuraIconHolder;
 import dev.genshinecraft.element.ElementalAuraHolder;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import dev.genshinecraft.element.ElementalAuraState;
+import dev.genshinecraft.element.ElementalReactionEngine;
 import dev.genshinecraft.item.CarrierData;
 import net.minecraft.world.entity.LivingEntity;
 //? if >=26.3 {
@@ -19,7 +24,51 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Mixin(LivingEntity.class)
-public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
+public abstract class LivingElementalAuraMixin implements ElementalAuraHolder, AuraIconHolder {
+    @Unique private static final EntityDataAccessor<Integer> GENSHINCRAFT_AURA_ICONS =
+            SynchedEntityData.defineId(LivingEntity.class, EntityDataSerializers.INT);
+    @Unique private static final EntityDataAccessor<String> GENSHINCRAFT_BOSS_BAR =
+            SynchedEntityData.defineId(LivingEntity.class, EntityDataSerializers.STRING);
+
+    //? if =1.20.1 {
+    /*@Inject(method = "defineSynchedData", at = @At("TAIL"))
+    private void genshinecraft$defineAuraIcons(CallbackInfo ci) {
+        ((LivingEntity) (Object) this).getEntityData().define(GENSHINCRAFT_AURA_ICONS, 0);
+        ((LivingEntity) (Object) this).getEntityData().define(GENSHINCRAFT_BOSS_BAR, "");
+    }
+    *///?} else {
+    @Inject(method = "defineSynchedData", at = @At("TAIL"))
+    private void genshinecraft$defineAuraIcons(SynchedEntityData.Builder builder, CallbackInfo ci) {
+        builder.define(GENSHINCRAFT_AURA_ICONS, 0);
+        builder.define(GENSHINCRAFT_BOSS_BAR, "");
+    }
+    //?}
+
+    @Override
+    public int genshinecraft$auraIcons() {
+        return ((LivingEntity) (Object) this).getEntityData().get(GENSHINCRAFT_AURA_ICONS);
+    }
+
+    @Override
+    public void genshinecraft$setAuraIcons(int mask) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity.getEntityData().get(GENSHINCRAFT_AURA_ICONS) != mask) {
+            entity.getEntityData().set(GENSHINCRAFT_AURA_ICONS, mask);
+        }
+    }
+    @Override
+    public String genshinecraft$bossBarId() {
+        return ((LivingEntity) (Object) this).getEntityData().get(GENSHINCRAFT_BOSS_BAR);
+    }
+
+    @Override
+    public void genshinecraft$setBossBarId(String id) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (!entity.getEntityData().get(GENSHINCRAFT_BOSS_BAR).equals(id)) {
+            entity.getEntityData().set(GENSHINCRAFT_BOSS_BAR, id);
+        }
+    }
+
     @Unique private static final String GENSHINCRAFT_AURAS = "genshinecraft.auras";
     @Unique private static final String GENSHINCRAFT_REACTIONS = "genshinecraft.reactions";
     @Unique private final ElementalAuraState genshinecraft$auraState = new ElementalAuraState();
@@ -39,7 +88,7 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
     private void genshinecraft$saveAuras(ValueOutput output, CallbackInfo ci) {
         // Special statuses can outlive their triggering elemental aura.
         boolean hasStatuses = false;
-        for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
+        for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct", "dew", "dew_cooldown"}) {
             if (genshinecraft$auraState.statusTicks(key) > 0) {
                 hasStatuses = true;
             }
@@ -50,6 +99,7 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
             ValueOutput aura = list.child(entry.getKey().name());
             aura.putInt("gauge_milli", Math.round(entry.getValue().gauge() * 1000f));
             aura.putInt("ticks", entry.getValue().remainingTicks());
+            aura.putString("source_mode", entry.getValue().source().name());
             if (entry.getValue().applier() != null) {
                 aura.putString("applier", entry.getValue().applier().toString());
             }
@@ -57,7 +107,7 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
         }
         if (hasStatuses) {
             ValueOutput flags = output.child(GENSHINCRAFT_REACTIONS);
-            for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
+            for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct", "dew", "dew_cooldown"}) {
                 flags.putInt(key, genshinecraft$auraState.statusTicks(key));
             }
             flags.putInt("freeze_hits", genshinecraft$auraState.remainingFrozenHits());
@@ -74,14 +124,17 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
                     flags.getInt("quicken").orElse(0),
                     flags.getInt("frozen").orElse(0),
                     flags.getInt("superconduct").orElse(0));
-            genshinecraft$auraState.restoreFrozenHits(flags.getInt("freeze_hits").orElseThrow());
+            genshinecraft$auraState.restoreFrozenHits(flags.getInt("freeze_hits").orElse(0));
+            genshinecraft$auraState.restoreDew(
+                    flags.getInt("dew").orElse(0), flags.getInt("dew_cooldown").orElse(0));
         });
         input.child(GENSHINCRAFT_AURAS).ifPresent(list -> {
             for (CarrierData.Element element : CarrierData.Element.values()) {
                 list.child(element.name()).ifPresent(aura -> genshinecraft$restore(
                         element, aura.getInt("gauge_milli").orElse(0),
                         aura.getInt("ticks").orElse(0),
-                        aura.getStringOr("applier", "")));
+                        aura.getStringOr("applier", ""),
+                        aura.getStringOr("source_mode", "NORMAL")));
             }
         });
     }
@@ -90,7 +143,7 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
     private void genshinecraft$saveAuras(CompoundTag tag, CallbackInfo ci) {
         // Special statuses can outlive their triggering elemental aura.
         boolean hasStatuses = false;
-        for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
+        for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct", "dew", "dew_cooldown"}) {
             if (genshinecraft$auraState.statusTicks(key) > 0) {
                 hasStatuses = true;
             }
@@ -101,6 +154,7 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
             CompoundTag aura = new CompoundTag();
             aura.putInt("gauge_milli", Math.round(entry.getValue().gauge() * 1000f));
             aura.putInt("ticks", entry.getValue().remainingTicks());
+            aura.putString("source_mode", entry.getValue().source().name());
             if (entry.getValue().applier() != null) {
                 aura.putString("applier", entry.getValue().applier().toString());
             }
@@ -110,7 +164,7 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
         }
         if (hasStatuses) {
             CompoundTag flags = new CompoundTag();
-            for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct"}) {
+            for (String key : new String[]{"electro", "burning", "quicken", "frozen", "superconduct", "dew", "dew_cooldown"}) {
                 flags.putInt(key, genshinecraft$auraState.statusTicks(key));
             }
             flags.putInt("freeze_hits", genshinecraft$auraState.remainingFrozenHits());
@@ -129,6 +183,8 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
                     flags.getInt("superconduct"));
             genshinecraft$auraState.restoreFrozenHits(
                     flags.getInt("freeze_hits"));
+            genshinecraft$auraState.restoreDew(
+                    flags.getInt("dew"), flags.getInt("dew_cooldown"));
         }
         if (!tag.contains(GENSHINCRAFT_AURAS)) {
             return;
@@ -140,13 +196,14 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
             }
             CompoundTag aura = saved.getCompound(element.name());
             genshinecraft$restore(element, aura.getInt("gauge_milli"),
-                    aura.getInt("ticks"), aura.getString("applier"));
+                    aura.getInt("ticks"), aura.getString("applier"), aura.getString("source_mode"));
         }
     }
     //?}
 
     @Unique
-    private void genshinecraft$restore(CarrierData.Element element, int milli, int ticks, String applier) {
+    private void genshinecraft$restore(CarrierData.Element element, int milli, int ticks,
+                                      String applier, String sourceMode) {
         UUID uuid = null;
         if (!applier.isEmpty()) {
             try {
@@ -155,6 +212,12 @@ public abstract class LivingElementalAuraMixin implements ElementalAuraHolder {
                 // A malformed source UUID must not prevent loading the entity.
             }
         }
-        genshinecraft$auraState.restore(element, milli / 1000.0f, ticks, uuid);
+        ElementalReactionEngine.Mode mode;
+        try {
+            mode = ElementalReactionEngine.Mode.valueOf(sourceMode);
+        } catch (IllegalArgumentException exception) {
+            mode = ElementalReactionEngine.Mode.NORMAL;
+        }
+        genshinecraft$auraState.restore(element, milli / 1000.0f, ticks, uuid, mode);
     }
 }

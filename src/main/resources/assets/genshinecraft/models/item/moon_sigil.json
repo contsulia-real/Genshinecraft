@@ -1,6 +1,6 @@
 {
+  "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "genshinecraft:item/moon_sigil"
-  },
-  "parent": "minecraft:item/generated"
+    "layer0": "genshinecraft:item/sigil/moon_sigil"
+  }
 }
