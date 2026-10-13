@@ -1,13 +1,12 @@
 package dev.genshinecraft.element;
 
 import dev.genshinecraft.item.CarrierData.Element;
+import dev.genshinecraft.combat.ElementalCombat;
 import dev.genshinecraft.combat.DamageNumbers;
 import dev.genshinecraft.particle.ElementalParticles;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-//? if >=26.3 {
-/*import net.minecraft.world.damagesource.DamageSource;
-*///?}
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
@@ -82,43 +81,83 @@ public final class ElementalBloomCore extends Entity {
         }
     }
 
-    /** Fire detonates the nearest core; Electro launches its Hyperbloom damage. */
+    /** Make the core a real melee/projectile target, rather than an untargetable visual. */
+    @Override
+    public boolean isPickable() {
+        return true;
+    }
+
+    @Override
+    public boolean isAttackable() {
+        return true;
+    }
+
+    //? if >=26.3 {
+    /*@Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return attacked(level, source, amount);
+    }
+    *///?} else {
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        return level() instanceof ServerLevel server && attacked(server, source, amount);
+    }
+    //?}
+
+    private boolean attacked(ServerLevel level, DamageSource source, float amount) {
+        if (isRemoved() || amount <= 0f || !(source.getEntity() instanceof Player attacker)) {
+            return false;
+        }
+        Element incoming = ElementalCombat.sourceElement(source);
+        int mastery = ElementalCombat.reactionMastery(attacker, source);
+        if (incoming == Element.PYRO || incoming == Element.ELECTRO) {
+            triggerCore(level, this, null, incoming, attacker, mastery);
+        } else {
+            detonate(level, this, 2f, 2.5, "bloom", owner, reactionMastery);
+        }
+        return true;
+    }
+
+    /** Indirect fire/electro hits still activate one nearby core. */
     public static boolean trigger(ServerLevel level, LivingEntity hit, Element incoming,
                                   Player attacker, int mastery) {
-        if (incoming != Element.PYRO && incoming != Element.ELECTRO) {
-            return false;
-        }
+        if (incoming != Element.PYRO && incoming != Element.ELECTRO) return false;
         List<ElementalBloomCore> cores = level.getEntitiesOfClass(ElementalBloomCore.class,
                 hit.getBoundingBox().inflate(2.8));
-        if (cores.isEmpty()) {
-            return false;
-        }
-        ElementalBloomCore core = cores.get(0);
+        if (cores.isEmpty()) return false;
+        return triggerCore(level, cores.get(0), hit, incoming, attacker, mastery);
+    }
+
+    /** Shared resolution for a directly attacked core or an indirectly triggered core. */
+    private static boolean triggerCore(ServerLevel level, ElementalBloomCore core, LivingEntity hit,
+                                       Element incoming, Player attacker, int mastery) {
+        if (core.isRemoved()) return false;
         if (incoming == Element.PYRO) {
             detonate(level, core, 4f, 3.0, "burgeon", attacker.getUUID(), mastery);
         } else {
-            LivingEntity selected = hit;
-            double nearest = Double.MAX_VALUE;
+            LivingEntity selected = hit != null && hit.isAlive()
+                    && !hit.getUUID().equals(core.owner) ? hit : null;
+            double nearest = selected == null ? Double.MAX_VALUE : selected.distanceToSqr(core);
             for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
                     core.getBoundingBox().inflate(5.0), LivingEntity::isAlive)) {
-                if (other.getUUID().equals(core.owner)) {
-                    continue;
-                }
+                if (other == attacker || other.getUUID().equals(core.owner)) continue;
                 double distance = other.distanceToSqr(core);
                 if (distance < nearest) {
                     nearest = distance;
                     selected = other;
                 }
             }
-            ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, attacker.getUUID(),
-                    ElementalReactionEffects.transformativeDamage(4f, mastery),
-                    core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
-            if (selected.isAlive() && !selected.getUUID().equals(core.owner)) {
-                applyLunarDew(level, core, List.of(selected));
+            if (selected != null) {
+                ElementalReactionEffects.dealDamage(level, selected, Element.DENDRO, attacker.getUUID(),
+                        ElementalReactionEffects.transformativeDamage(4f, mastery),
+                        core.lunar ? DamageNumbers.Gradient.LUNAR_BLOOM : null);
+                if (selected.isAlive()) applyLunarDew(level, core, List.of(selected));
             }
             level.sendParticles(ElementalParticles.reaction("hyperbloom"),
-                    selected.getX(), selected.getY() + selected.getBbHeight() * 0.6,
-                    selected.getZ(), 12, 0.25, 0.3, 0.25, 0.08);
+                    selected == null ? core.getX() : selected.getX(),
+                    selected == null ? core.getY() : selected.getY() + selected.getBbHeight() * 0.6,
+                    selected == null ? core.getZ() : selected.getZ(),
+                    12, 0.25, 0.3, 0.25, 0.08);
             core.discard();
         }
         return true;
@@ -162,13 +201,6 @@ public final class ElementalBloomCore extends Entity {
         level.sendParticles(ElementalParticles.reaction(effect),
                 x, y, z, count, 0.25, 0.2, 0.25, 0.04);
     }
-
-    //? if >=26.3 {
-    /*@Override
-    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
-        return false;
-    }
-    *///?}
 
     private void restoreOwner(String saved) {
         owner = null;

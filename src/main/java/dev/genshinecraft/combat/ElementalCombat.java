@@ -227,7 +227,7 @@ public final class ElementalCombat {
         return damage * state.stellarElementBonus(incoming);
     }
 
-    static CarrierData.Element sourceElement(DamageSource source) {
+    public static CarrierData.Element sourceElement(DamageSource source) {
         for (CarrierData.Element element : CarrierData.Element.values()) {
             if (source.is(ATTACK_TYPES.get(element)) || source.is(REACTION_TYPES.get(element))) {
                 return element;
