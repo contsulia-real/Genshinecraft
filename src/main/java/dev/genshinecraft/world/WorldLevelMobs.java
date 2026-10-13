@@ -8,7 +8,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 //? if >=26.3 {
@@ -19,7 +18,7 @@ import net.minecraft.resources.ResourceLocation;
 /*import java.util.UUID;
 *///?}
 
-/** World Level scaling for ordinary hostile mobs; no scaling for players, bosses or passive mobs. */
+/** World Level scaling for friendly, neutral and hostile mobs; never players or bosses. */
 public final class WorldLevelMobs {
     //? if >=26.3 {
     /*private static final Identifier HEALTH_ID =
@@ -34,7 +33,7 @@ public final class WorldLevelMobs {
     private WorldLevelMobs() {}
 
     public static boolean eligible(Entity entity) {
-        return entity instanceof Mob && entity instanceof Enemy
+        return entity instanceof Mob
                 && !(entity instanceof WitherBoss)
                 && !(entity instanceof EnderDragon);
     }

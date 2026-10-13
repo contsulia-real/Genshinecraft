@@ -44,10 +44,16 @@ public final class ElementalBloomCore extends Entity {
     }
 
     public static void spawn(ServerLevel level, LivingEntity target, Player owner, boolean lunar, int mastery) {
+        spawn(level, target, owner.getUUID(), lunar, mastery);
+    }
+
+    public static void spawn(ServerLevel level, LivingEntity target, UUID owner, boolean lunar, int mastery) {
         List<ElementalBloomCore> existing = new ArrayList<>();
         for (var entity : level.getAllEntities()) {
             if (entity instanceof ElementalBloomCore core && !core.isRemoved()
-                    && owner.getUUID().equals(core.owner)) {
+                    && (owner == null
+                        ? core.owner == null && core.distanceToSqr(target) <= 64.0
+                        : owner.equals(core.owner))) {
                 existing.add(core);
             }
         }
@@ -56,7 +62,7 @@ public final class ElementalBloomCore extends Entity {
                     .ifPresent(core -> detonate(level, core, 2f, 2.5, "bloom", core.owner, core.reactionMastery));
         }
         ElementalBloomCore core = new ElementalBloomCore(ElementalEntities.DENDRO_CORE.get(), level);
-        core.owner = owner.getUUID();
+        core.owner = owner;
         core.lunar = lunar;
         core.reactionMastery = Math.max(0, mastery);
         double angle = level.getRandom().nextDouble() * Math.PI * 2;

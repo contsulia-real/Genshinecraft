@@ -1,6 +1,5 @@
 package dev.genshinecraft.mixin;
 
-import dev.genshinecraft.element.ElementalAuraHolder;
 import dev.genshinecraft.item.CarrierData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,8 +16,8 @@ public abstract class EnvironmentLightningMixin {
     @Inject(method = "thunderHit", at = @At("TAIL"))
     private void genshinecraft$lightningAura(ServerLevel level, LightningBolt bolt, CallbackInfo ci) {
         if ((Object) this instanceof LivingEntity living) {
-            ((ElementalAuraHolder) living).genshinecraft$auras()
-                    .apply(CarrierData.Element.ELECTRO, null);
+            dev.genshinecraft.element.ElementalReactionEffects.onEnvironment(
+                    level, living, CarrierData.Element.ELECTRO);
         }
     }
 }

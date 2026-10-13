@@ -5,6 +5,7 @@ import dev.genshinecraft.world.WorldLevelMobs;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
@@ -56,6 +57,19 @@ public abstract class WorldLevelLootMixin {
                 || stack.is(Items.SPIDER_EYE) || stack.is(Items.ENDER_PEARL)
                 || stack.is(Items.SLIME_BALL) || stack.is(Items.BLAZE_ROD)
                 || stack.is(Items.MAGMA_CREAM) || stack.is(Items.GHAST_TEAR)
-                || stack.is(Items.PHANTOM_MEMBRANE);
+                || stack.is(Items.PHANTOM_MEMBRANE)
+                // Normal products from passive/neutral mobs follow the same reward curve.
+                || stack.is(Items.BEEF) || stack.is(Items.COOKED_BEEF)
+                || stack.is(Items.PORKCHOP) || stack.is(Items.COOKED_PORKCHOP)
+                || stack.is(Items.CHICKEN) || stack.is(Items.COOKED_CHICKEN)
+                || stack.is(Items.MUTTON) || stack.is(Items.COOKED_MUTTON)
+                || stack.is(Items.RABBIT) || stack.is(Items.COOKED_RABBIT)
+                || stack.is(Items.COD) || stack.is(Items.COOKED_COD)
+                || stack.is(Items.SALMON) || stack.is(Items.COOKED_SALMON)
+                || stack.is(Items.LEATHER) || stack.is(Items.FEATHER)
+                || stack.is(Items.RABBIT_HIDE) || stack.is(Items.INK_SAC)
+                || stack.is(Items.GLOW_INK_SAC) || stack.is(ItemTags.WOOL)
+                || stack.is(Items.SNOWBALL) || stack.is(Items.POPPY)
+                || stack.is(Items.IRON_INGOT);
     }
 }

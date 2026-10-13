@@ -404,13 +404,13 @@ public final class ElementalAuraState {
         // and subsequent elemental hits use the existing gauge/reaction engine.
         if (entity.tickCount % 40 == 0) {
             if (entity.isInLava() || entity.isOnFire()) {
-                apply(CarrierData.Element.PYRO, null);
+                ElementalReactionEffects.onEnvironment(server, entity, CarrierData.Element.PYRO);
             } else if (entity.isInWaterOrRain()) {
-                apply(CarrierData.Element.HYDRO, null);
+                ElementalReactionEffects.onEnvironment(server, entity, CarrierData.Element.HYDRO);
             } else if (entity.getTicksFrozen() > 0
                     || (server.canSeeSky(entity.blockPosition())
                     && server.getBiome(entity.blockPosition()).value().getBaseTemperature() <= 0.15f)) {
-                apply(CarrierData.Element.CRYO, null);
+                ElementalReactionEffects.onEnvironment(server, entity, CarrierData.Element.CRYO);
             }
         }
         icd.entrySet().removeIf(entry -> entity.tickCount - entry.getValue().lastApplicationTick() > 70);

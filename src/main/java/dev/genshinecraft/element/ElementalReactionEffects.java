@@ -46,6 +46,12 @@ public final class ElementalReactionEffects {
         applyIncomingElement(level, attacker, target, incoming, false, mode, mastery);
     }
 
+    /** Environmental applications resolve the same normal reactions without inventing a player attacker. */
+    public static void onEnvironment(ServerLevel level, LivingEntity target, Element incoming) {
+        if (!target.isAlive()) return;
+        applyIncomingElement(level, null, target, incoming, false, ElementalReactionEngine.Mode.NORMAL, 0);
+    }
+
     /**
      * Swirl disperses an existing element into each nearby target as a new
      * elemental application. This must resolve the target's gauge/reaction,
@@ -57,11 +63,14 @@ public final class ElementalReactionEffects {
                                              boolean swirlSpread, ElementalReactionEngine.Mode mode,
                                              int mastery) {
         ElementalAuraState state = ((ElementalAuraHolder) target).genshinecraft$auras();
-        if (swirlSpread) {
+        UUID owner = attacker == null ? null : attacker.getUUID();
+        if (swirlSpread && attacker != null) {
             ElementalBloomCore.trigger(level, target, incoming, attacker, mastery);
         }
-        ElementalReactionEngine.Plan plan = ElementalReactionEngine.preview(state, incoming,
-                swirlSpread ? ElementalReactionEngine.Mode.NORMAL : mode);
+        ElementalReactionEngine.Plan plan = attacker == null
+                ? ElementalReactionEngine.preview(state, incoming)
+                : ElementalReactionEngine.preview(state, incoming,
+                        swirlSpread ? ElementalReactionEngine.Mode.NORMAL : mode);
         // Hydro Swirl itself only spreads Wet; secondary Vaporize can still
         // damage targets already carrying Pyro.
         if (swirlSpread && (incoming != Element.HYDRO
@@ -73,11 +82,11 @@ public final class ElementalReactionEffects {
                 case SPREAD -> spreadDamage + additiveBonus(2.4f, mastery);
                 default -> spreadDamage * plan.damageMultiplier();
             };
-            dealDamage(level, target, incoming, attacker.getUUID(), damage);
+            dealDamage(level, target, incoming, owner, damage);
         }
         if (plan.reaction() == ElementalReactionEngine.Reaction.NONE) {
             if (incoming != Element.ANEMO && incoming != Element.GEO) {
-                state.apply(incoming, attacker.getUUID(), mode);
+                state.apply(incoming, owner, mode);
             }
             return;
         }
@@ -99,8 +108,8 @@ public final class ElementalReactionEffects {
                 }
             }
             case ELECTRO_CHARGED -> {
-                state.apply(incoming, attacker.getUUID(), mode);
-                state.beginElectroCharged(attacker.getUUID(), mastery);
+                state.apply(incoming, owner, mode);
+                state.beginElectroCharged(owner, mastery);
             }
             case FROZEN -> {
                 state.beginFrozen();
@@ -109,7 +118,7 @@ public final class ElementalReactionEffects {
             case SWIRL -> {
                 // Original target gets the Swirl hit. Nearby targets receive
                 // the *element*, with their own reaction consumed/resolved.
-                dealDamage(level, target, plan.existing(), attacker.getUUID(),
+                dealDamage(level, target, plan.existing(), owner,
                         transformativeDamage(1.8f, mastery));
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
                         target.getBoundingBox().inflate(3.0), e -> e != target && e.isAlive())) {
@@ -120,13 +129,14 @@ public final class ElementalReactionEffects {
             }
             case CRYSTALLIZE -> ElementalCrystals.drop(level, target, plan.existing());
             case LUNAR_CHARGED -> {
-                state.apply(incoming, attacker.getUUID(), mode);
-                state.beginLunarCharged(attacker.getUUID(), mastery);
+                state.apply(incoming, owner, mode);
+                state.beginLunarCharged(owner, mastery);
 
             }
             case LUNAR_BLOOM -> {
                 // Lunar-Bloom generates a core and reserve, without an immediate reaction hit.
-                ElementalBloomCore.spawn(level, target, attacker, true, mastery);
+                if (attacker == null) break;
+                ElementalBloomCore.spawn(level, target, owner, true, mastery);
                 ElementalAuraState dew = ((ElementalAuraHolder) attacker).genshinecraft$auras();
                 if (dew.collectVerdantDew()) {
                     if (attacker instanceof ServerPlayer player) {
@@ -137,7 +147,7 @@ public final class ElementalReactionEffects {
             }
             case LUNAR_CRYSTALLIZE -> {
                 ElementalCrystals.createMoonCages(level, target);
-                state.startMoonCages(attacker.getUUID(), mastery);
+                state.startMoonCages(owner, mastery);
             }
             case STELLAR_CONDUCT -> {
                 // The reaction itself deals no damage; the six-second field boosts Cryo
@@ -152,7 +162,7 @@ public final class ElementalReactionEffects {
                 }
             }
             case STELLAR_SWIRL -> {
-                dealSpecialDamage(level, target, Element.ANEMO, attacker.getUUID(), 0.75f,
+                dealSpecialDamage(level, target, Element.ANEMO, owner, 0.75f,
                         mastery, DamageNumbers.Gradient.STELLAR_WIND);
                 LivingEntity anchor = target;
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class,
@@ -163,23 +173,36 @@ public final class ElementalReactionEffects {
                     }
                 }
                 ElementalAuraState vortex = ((ElementalAuraHolder) anchor).genshinecraft$auras();
-                if (vortex.triggerStellarVortex(attacker.getUUID(), mastery)) {
+                if (vortex.triggerStellarVortex(owner, mastery)) {
                     vortex.detonateStellarVortex(level, anchor);
                 }
             }
             case BURNING -> {
-                state.beginBurning(attacker.getUUID(), mastery);
-                state.apply(Element.PYRO, attacker.getUUID(), mode);
+                state.beginBurning(owner, mastery);
+                state.apply(Element.PYRO, owner, mode);
             }
-            case BLOOM -> ElementalBloomCore.spawn(level, target, attacker, false, mastery);
+            case BLOOM -> ElementalBloomCore.spawn(level, target, owner, false, mastery);
             case QUICKEN -> {
                 state.beginQuicken();
             }
             case AGGRAVATE, SPREAD -> {
-                // Additive bonus was applied in the original damage call, pre-armor.
+                // Player hits got their bonus pre-armor. The environment has no attack
+                // amount, so it supplies only the additive reaction component.
+                if (attacker == null) {
+                    dealDamage(level, target, incoming, null,
+                            additiveBonus(plan.reaction() == ElementalReactionEngine.Reaction.AGGRAVATE
+                                    ? 2f : 2.4f, mastery));
+                }
+            }
+            case VAPORIZE, MELT -> {
+                // Player hits already applied amplification before armor; environmental
+                // application needs a small base hit to produce actual reaction damage.
+                if (attacker == null) {
+                    dealDamage(level, target, incoming, null,
+                            amplifiedDamage(1f, plan.damageMultiplier(), mastery));
+                }
             }
             default -> {
-                // Vaporize and Melt already modified the original hit's damage.
             }
         }
         String effect = switch (plan.reaction()) {
@@ -326,11 +349,12 @@ public final class ElementalReactionEffects {
 
     private static void splash(ServerLevel level, LivingEntity central, Player attacker,
                                Element element, float damage, int mastery, double radius, boolean push) {
+        UUID owner = attacker == null ? null : attacker.getUUID();
         float scaledDamage = transformativeDamage(damage, mastery);
         for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
                 central.getBoundingBox().inflate(radius), LivingEntity::isAlive)) {
             if (victim != attacker) {
-                dealDamage(level, victim, element, attacker.getUUID(), scaledDamage);
+                dealDamage(level, victim, element, owner, scaledDamage);
             }
             if (push && victim != attacker) {
                 double dx = victim.getX() - central.getX();
