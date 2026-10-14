@@ -97,7 +97,7 @@ public final class AuraIconOverlay {
                     || y + count * 14 > graphics.guiHeight() + 10) continue;
             for (CarrierData.Element element : CarrierData.Element.values()) {
                 if ((mask & (1 << element.ordinal())) == 0) continue;
-                glyph(graphics, client, x, y, element.ordinal(), false);
+                glyph(graphics, client, x, y, element.ordinal(), "attached_elements");
                 y += 14;
             }
         }
@@ -116,8 +116,8 @@ public final class AuraIconOverlay {
         int x;
         int y;
         if (creative) {
-            // Vanilla creative HUD has no armor row: center icons above the hotbar.
-            x = graphics.guiWidth() / 2 - count * 11 / 2;
+            // Start above the hotbar's left edge, then move right for each aura.
+            x = graphics.guiWidth() / 2 - 91;
             y = graphics.guiHeight() - 39;
         } else {
             // Vanilla positions armor above the hearts, moving it up for extra heart rows.
@@ -130,7 +130,7 @@ public final class AuraIconOverlay {
         }
         for (CarrierData.Element element : CarrierData.Element.values()) {
             if ((mask & (1 << element.ordinal())) == 0) continue;
-            glyph(graphics, client, x, y, element.ordinal(), true);
+            glyph(graphics, client, x, y, element.ordinal(), "attached_elements_hud");
             x += 11;
         }
     }
@@ -159,7 +159,7 @@ public final class AuraIconOverlay {
                 for (CarrierData.Element element : CarrierData.Element.values()) {
                     if ((mask & (1 << element.ordinal())) == 0) continue;
                     glyph(graphics, client, x + 10 * iconIndex++, barY + 8,
-                            element.ordinal(), true);
+                            element.ordinal(), "attached_elements_bar");
                 }
             }
             barY += 19; // Vanilla spacing: 10 + font.lineHeight (9 px).
@@ -213,12 +213,11 @@ public final class AuraIconOverlay {
 
     //? if >=26.3 {
     /*private static void glyph(GuiGraphicsExtractor graphics, Minecraft client,
-                              int x, int y, int index, boolean small) {
+                              int x, int y, int index, String family) {
     *///?} else {
     private static void glyph(GuiGraphics graphics, Minecraft client,
-                              int x, int y, int index, boolean small) {
+                              int x, int y, int index, String family) {
     //?}
-        String family = small ? "attached_elements_bar" : "attached_elements";
         //? if >=26.3 {
         /*Component value = Component.literal(String.valueOf((char) (FIRST_GLYPH + index)))
                 .withStyle(style -> style.withColor(0xffffff)
