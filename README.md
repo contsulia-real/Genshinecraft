@@ -6,13 +6,7 @@ A Minecraft mod featuring elemental combat, statues, and external magic organs.
 
 **[简体中文](#简体中文) · [English](#english) · [Issues](https://github.com/contsulia-real/Genshinecraft/issues) · [Source](https://github.com/contsulia-real/Genshinecraft)**
 
-<p align="center">
-  <img src="src/main/resources/assets/genshinecraft/textures/item/vision/mondstadt/mondstadt_anemo.png" width="64" alt="Anemo Vision" />
-  &nbsp;&nbsp;&nbsp;
-  <img src="src/main/resources/assets/genshinecraft/textures/item/lunar_wheel/lunar_wheel_hydro.png" width="64" alt="Hydro Moon Wheel" />
-  &nbsp;&nbsp;&nbsp;
-  <img src="src/main/resources/assets/genshinecraft/textures/item/star_wedge/star_wedge_pyro.png" width="64" alt="Pyro Star Wedge" />
-</p>
+![Genshinecraft 游戏截图 / Official Gameplay Screenshot](docs/screenshots/official-gameplay.png)
 
 ## 支持版本 / Supported Versions
 
