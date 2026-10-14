@@ -9,6 +9,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.component.DataComponents;
 //?}
 
 import java.util.Optional;
@@ -19,6 +20,8 @@ public record CarrierData(
         int skillLevel, int burstLevel, int elementalMastery,
         String statue, UUID owner, String ownerName, boolean abandoned
 ) {
+    public static final String UNCLAIMABLE = "genshinecraft.unclaimable";
+
     public enum Element {
         ANEMO(0x73DDB9), GEO(0xE8BB65), ELECTRO(0xB78DEB),
         DENDRO(0x93CA65), HYDRO(0x64B5EF), PYRO(0xF08062),
@@ -127,6 +130,13 @@ public record CarrierData(
         if (!CarrierItems.isCarrier(stack)) {
             return false;
         }
+        // Chest loot stays ownerless even after its first inventory tick or a binding attempt.
+        //? if =1.20.1 {
+        /*if (stack.getTag() != null && stack.getTag().contains(UNCLAIMABLE)) return false;
+        *///?} else {
+        var customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData != null && customData.copyTag().contains(UNCLAIMABLE)) return false;
+        //?}
         CarrierData data = read(stack);
         if (data == null) {
             // Refuse corrupted or mismatched existing data instead of resetting ownership.
