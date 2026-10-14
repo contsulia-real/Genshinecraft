@@ -185,12 +185,11 @@ public final class GenshinecraftClient {
     private static void appendBindingTooltip(ItemStack stack, List<Component> lines) {
         if (CarrierItems.isCarrier(stack)) {
             CarrierData organ = CarrierData.read(stack);
-            String name = organ == null || organ.abandoned() || organ.owner() == null
-                    ? "" : organ.ownerName();
-            lines.add(name.isEmpty()
-                    ? Component.translatable("tooltip.genshinecraft.no_owner").withStyle(ChatFormatting.GRAY)
+            String name = organ == null || organ.owner() == null ? "" : organ.ownerName();
+            lines.add(organ == null || organ.abandoned() || organ.owner() == null
+                    ? Component.translatable("tooltip.genshinecraft.no_owner").withStyle(ChatFormatting.RED)
                     : Component.translatable("tooltip.genshinecraft.owner", name).withStyle(ChatFormatting.GRAY));
-            if (organ != null && !organ.statue().isBlank()) {
+            if (organ != null && !organ.abandoned() && !organ.statue().isBlank()) {
                 lines.add(Component.translatable("tooltip.genshinecraft.teleport_carrier",
                         TELEPORT.getTranslatedKeyMessage()).withStyle(ChatFormatting.GRAY));
             }

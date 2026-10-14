@@ -20,7 +20,9 @@
     "WorldLevelLootMixin",
     "WorldLevelVisibilityMixin",
     "VanillaAdvancementTabsMixin",
-    "EnvironmentLightningMixin"
+    "EnvironmentLightningMixin",
+    "GrindstoneOrganInputMixin",
+    "GrindstoneAbandonMixin"
   ],
   "injectors": {
     "defaultRequire": 1

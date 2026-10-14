@@ -45,7 +45,7 @@ public final class Genshinecraft {
                 return;
             }
             if (player.containerMenu instanceof GrindstoneMenu grindstone) {
-                updateGrindstone(grindstone);
+                updateGrindstone(grindstone, player);
             }
             var inventory = player.getInventory();
             for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -63,12 +63,25 @@ public final class Genshinecraft {
             }
         });
     }
-    private static void updateGrindstone(GrindstoneMenu menu) {
+    private static void updateGrindstone(GrindstoneMenu menu, net.minecraft.world.entity.player.Player player) {
         ItemStack inputA = menu.getSlot(0).getItem();
         ItemStack inputB = menu.getSlot(1).getItem();
         ItemStack output = menu.getSlot(2).getItem();
-        // Vanilla leaves an unenchanted single input without an output.
-        // An element-bound weapon still needs to be grindable by itself.
+        // A single owned organ can be washed once to abandon its ownership.
+        // Mark only a COPY in the result slot: taking it consumes the input via vanilla onTake.
+        if (output.isEmpty() && inputA.isEmpty() != inputB.isEmpty()) {
+            ItemStack input = inputA.isEmpty() ? inputB : inputA;
+            CarrierData data = CarrierData.read(input);
+            if (data != null && data.usableBy(player.getUUID())) {
+                ItemStack result = input.copy();
+                if (CarrierData.abandon(result, player.getUUID())) {
+                    menu.getSlot(2).set(result);
+                    menu.broadcastChanges();
+                    return;
+                }
+            }
+        }
+        // Keep the existing grindstone removal of weapon-element bindings.
         if (output.isEmpty() && inputA.isEmpty() != inputB.isEmpty()) {
             ItemStack input = inputA.isEmpty() ? inputB : inputA;
             if (WeaponBinding.read(input) != null) {

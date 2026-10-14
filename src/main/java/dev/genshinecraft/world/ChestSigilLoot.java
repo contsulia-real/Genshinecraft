@@ -24,12 +24,23 @@ public final class ChestSigilLoot {
         //?}
             if (!builtin || !path.startsWith("chests/")) return;
             LootPool.Builder pool = LootPool.lootPool()
-                    .when(LootItemRandomChanceCondition.randomChance(0.20f));
+                    .when(LootItemRandomChanceCondition.randomChance(0.75f));
             for (CarrierData.Element element : CarrierData.Element.values()) {
                 pool.add(LootItem.lootTableItem(CarrierItems.SIGILS.get(element).get()));
             }
             pool.add(LootItem.lootTableItem(CarrierItems.MOON_SIGIL.get()));
             context.addPool(pool);
+            LootPool.Builder organs = LootPool.lootPool()
+                    .when(LootItemRandomChanceCondition.randomChance(0.05f));
+            for (CarrierData.Element element : CarrierData.Element.values()) {
+                organs.add(LootItem.lootTableItem(CarrierItems.VISIONS.get(element).get()));
+                for (var region : CarrierItems.REGIONAL_VISIONS.values()) {
+                    organs.add(LootItem.lootTableItem(region.get(element).get()));
+                }
+                organs.add(LootItem.lootTableItem(CarrierItems.MOON_WHEELS.get(element).get()));
+                organs.add(LootItem.lootTableItem(CarrierItems.STAR_WEDGES.get(element).get()));
+            }
+            context.addPool(organs);
         });
     }
 }

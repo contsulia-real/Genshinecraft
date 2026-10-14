@@ -35,7 +35,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 /** 26.3 advancement backgrounds use sprite IDs; earlier versions use texture paths. */
 tasks.processResources {
-    filesMatching("data/genshinecraft/advancement/world_level_0.json") {
+    filesMatching(listOf("data/genshinecraft/advancement/world_level_0.json",
+            "data/genshinecraft/advancement/embrace_lies_accept_truth.json")) {
         filter { line: String ->
             line.replace("minecraft:textures/gui/advancements/backgrounds/stone.png",
                     "minecraft:gui/advancements/backgrounds/stone")
