@@ -21,6 +21,7 @@
     "WorldLevelVisibilityMixin",
     "VanillaAdvancementTabsMixin",
     "EnvironmentLightningMixin",
+    "ElementSlimeMonsterHunterMixin",
     "GrindstoneOrganInputMixin",
     "GrindstoneAbandonMixin"
   ],

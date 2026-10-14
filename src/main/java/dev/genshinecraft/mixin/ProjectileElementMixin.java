@@ -66,7 +66,7 @@ public abstract class ProjectileElementMixin implements ElementalProjectile {
         genshinecraft$capture(player.getOffhandItem(), player, trident);
     }
 
-    /** Bound Anemo arrows/tridents pull mobs within one block of their actual hit point. */
+    /** Bound Anemo arrows/tridents pull mobs within two blocks of entity or block impact. */
     @Inject(method = "onHit", at = @At("TAIL"))
     private void genshinecraft$anemoImpact(HitResult hit, CallbackInfo ci) {
         Projectile projectile = (Projectile) (Object) this;
@@ -87,13 +87,13 @@ public abstract class ProjectileElementMixin implements ElementalProjectile {
         }
         if (!valid) return;
         Vec3 center = hit.getLocation();
-        AABB range = new AABB(center, center).inflate(1.0);
+        AABB range = new AABB(center, center).inflate(2.0);
         for (LivingEntity mob : server.getEntitiesOfClass(LivingEntity.class, range,
                 entity -> entity.isAlive() && entity != owner)) {
             Vec3 direction = center.subtract(mob.getX(),
                     mob.getY() + mob.getBbHeight() * 0.5, mob.getZ());
             double distance = direction.length();
-            if (distance < 0.001 || distance > 1.0) continue;
+            if (distance < 0.001 || distance > 2.0) continue;
             double strength = 0.65 / distance;
             mob.push(direction.x * strength, direction.y * strength, direction.z * strength);
         }

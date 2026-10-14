@@ -1,119 +1,127 @@
 # Genshinecraft
 
-**将七元素战斗融入 Minecraft 生存世界。**
+**Elemental combat meets Minecraft. · 让七元素融入 Minecraft 的冒险。**
 
-Genshinecraft 是一款非官方 Minecraft 模组，围绕《原神》风格的**元素附着与反应、外置魔力器官、神像共鸣与供奉、世界等级**构建玩法。在探索、战斗和成长过程中，原版武器、生物、结构与环境都能参与元素系统。
+[简体中文](#简体中文) · [English](#english)
 
-**项目状态：功能开发已完成。** 这不代表已经发布正式安装包，也不意味着项目已进入维护阶段。
+---
 
-## 支持的平台
+## 简体中文
 
-| Minecraft | Fabric | Forge | NeoForge | Java |
-| --- | :---: | :---: | :---: | --- |
-| 1.20.1 | ✓ | ✓ | — | 17 |
-| 1.21.1 | ✓ | — | ✓ | 21 |
-| 26.3 | ✓ | — | ✓ | 25 |
+### 关于模组
 
-安装对应 Minecraft 版本和加载器的模组 JAR，并同时安装：
+**Genshinecraft** 是一款受《原神》元素系统启发的非官方 Minecraft 模组。探索世界中的神像，获得属于自己的外置魔力器官，为武器注入元素力量，并通过元素反应、神像供奉和世界等级逐步成长。
 
-- **Architectury API**：所有加载器版本均需要。
-- **Fabric API**：仅 Fabric 版本需要。
+**开发状态：功能开发已完成。** 本仓库目前提供源代码，尚未发布 GitHub Release 安装包。
 
-不同 Minecraft 版本的构建产物不可混用。
+### 模组特色
 
-## 核心玩法
+- **七元素与元素反应** — 风、岩、雷、草、水、火、冰七种元素，包含蒸发、融化、扩散、绽放、超载、冻结等反应；天气和环境也会影响元素附着。
+- **三类外置魔力器官** — 神之眼、月之轮与星之楔。将已认主的器官绑定到武器，进行元素攻击；月之轮和星之楔还能引发专属的月曜、星烁反应。
+- **神像与供奉** — 探索七天神像并尝试共鸣，每座神像仅有一次机会，成功率为 80%。收集元素之印供奉神像以提升元素精通；月神像提供独立的供奉成长。
+- **新的世界内容** — 七元素矿石、七种敌对元素史莱姆、神像结构，以及箱子中额外的印记与器官战利品。
+- **世界等级与战斗反馈** — 世界等级影响生物强度和部分掉落；元素附着图标、反应特效和伤害数字让战斗变化更直观。
 
-### 七元素战斗
+### 兼容版本
 
-包含**风、岩、雷、草、水、火、冰**七种元素。普通攻击、绑定武器发射的投射物和部分器官交互可造成元素伤害与附着。附着具有持续时间、附着量与攻击附着间隔（ICD），不等于每次攻击都会触发反应。
+| Minecraft | Fabric | Forge | NeoForge |
+| --- | :---: | :---: | :---: |
+| 1.20.1 | ✅ | ✅ | — |
+| 1.21.1 | ✅ | — | ✅ |
+| 26.3 | ✅ | — | ✅ |
 
-- **常规反应**：蒸发、融化、超载、超导、感电、冻结、扩散、结晶、燃烧、绽放、超绽放、烈绽放、激化、超激化和蔓激化。
-- **月曜反应**：月之轮参与相关附着时，部分常规反应转换为月曜感电、月绽放或月结晶。
-- **星烁反应**：星之楔参与相关附着时，部分常规反应转换为星烁超导或星烁扩散。
+**必需依赖：** 所有版本均需 **Architectury API**；使用 Fabric 时还需 **Fabric API**。请选择与 Minecraft 版本及模组加载器一致的依赖。
 
-特殊反应根据**实际参与反应的器官**决定，而不是根据背包里是否存有某种器官。水、雨、火、熔岩、寒冷环境与雷击也可产生环境附着并参与反应。
+### 安装
 
-生物身上的附着图标、玩家 HUD、反应粒子及可配置的伤害飘字提供战斗反馈。
+1. 安装上表所列、与你的 Minecraft 版本一致的 Fabric、Forge 或 NeoForge。
+2. 安装对应版本的 Architectury API；Fabric 玩家另外安装 Fabric API。
+3. 将对应加载器和游戏版本的 Genshinecraft JAR 放入游戏实例的 `mods` 文件夹。
 
-### 外置魔力器官与武器绑定
+**获取模组：** 当前尚无正式 Release 安装包，可以按下文说明从源码构建；不要将 GitHub 下载的源码 ZIP 直接放入 `mods` 文件夹。
 
-外置魔力器官包括三类七元素物品：
+### 如何开始
 
-| 类型 | 特点 |
-| --- | --- |
-| **神之眼** | 普通元素反应；包含多种地区外观 |
-| **月之轮** | 可触发对应的月曜反应 |
-| **星之楔** | 可触发对应的星烁反应 |
+1. **探索并共鸣：** 在世界中寻找七天神像，与神像交互，有机会获得对应元素的外置魔力器官。
+2. **绑定武器：** 在物品栏中拿起已认主的器官，对支持的武器使用右键绑定。器官需要留在玩家背包中才能为武器提供元素能力。
+3. **战斗与供奉：** 通过元素攻击触发反应；挖掘元素矿石、击败元素史莱姆并搜寻宝箱，收集印记供奉神像。
+4. **神像传送：** 手持可用且有来源神像的器官，按 **V** 返回来源神像；手持月之印按 **V** 可前往当前维度最近的已登记月神像。按键可在控制设置中修改。
 
-器官元素固定。通过七天神像共鸣得到的器官会认主，并记录所属玩家及来源神像。玩家可在物品栏中用自己的有效器官绑定武器，使剑、工具、弓弩、三叉戟等攻击附加相应元素；高版本另支持重锤与长矛。器官离开背包或失效时，关联武器也无法继续使用它的元素能力。武器绑定可用砂轮洗除。
+**器官所有权说明：** 原版箱子战利品表额外有 **5%** 概率提供随机元素和款式的**无主器官**，但这类器官**不能认主**，首次进入背包也不会自动认主。主动将自己的器官放入砂轮并取出结果，会永久放弃所有权、将生命值降至 **1 点**，并获得独立进度**「拥抱谎言，接受真实」**。无主器官提示显示红字「无主」。
 
-手持有效器官还可以进行部分原版世界交互，例如火元素点燃、放置火，水元素放水，草元素催熟作物，风元素加速方块运转，岩元素挖掘元素矿石。**元素战技和元素爆发不属于当前已实现的玩法。**
+### 从源码构建
 
-**主动放弃所有权：** 玩家将自己拥有的有效器官放入砂轮，并实际取走产物时才会放弃；仅查看结果不会触发。放弃后器官永久失效，不能重新认主，同时玩家的生命值被强制设为 **1 点（半颗心）**，并获得独立进度 **「拥抱谎言，接受真实」**。该进度不连接世界等级进度链。
+仓库使用 Gradle Wrapper、Stonecutter 和 Architectury。按构建目标准备相应 JDK：**1.20.1 使用 Java 17、1.21.1 使用 Java 21、26.3 使用 Java 25**。
 
-无主器官的物品提示显示红色 **「无主」**，不会显示砂轮放弃操作说明。
-
-### 神像、供奉与传送
-
-- **七天神像**自然生成于世界。每座神像在整个服务器中只有**一次共鸣机会**，成功概率 **80%**，无论成功与否都消耗机会。共鸣成功后得到与神像元素对应的器官；已持有四枚有效器官的玩家无法再进行共鸣。
-- **七天神像供奉**使用对应元素之印。每座神像的等级及供奉进度由世界共享；来源于该神像的器官获得对应元素精通。
-- **月神像**独立生成，只接受月之印供奉，不提供共鸣。月神像的供奉等级按玩家独立保存，同一玩家访问不同月神像时共享自己的供奉进度，并为其有效器官提供额外元素精通。
-- **供奉界面**左侧显示神像的三维方块结构预览，右侧提供等级列表、消耗与奖励，并可选择「升一级」或「供奉全部」。
-
-默认按 **V** 使用神像传送（可在控制设置中修改）：手持有效、已认主且有来源神像的器官可传送至其来源七天神像；手持月之印可传送至当前维度最近的已登记月神像。传送由服务器检查目的地和安全落脚点。
-
-### 探索、矿石与箱子奖励
-
-世界新增七种元素矿石及对应的深板岩变种、七种敌对元素史莱姆，以及七天神像和月神像结构。
-
-内置 `chests/` 箱子战利品表在原版奖励之外额外独立抽取：
-
-| 机会 | 奖励 |
-| --- | --- |
-| **75%** | 七种元素之印或月之印随机一种 |
-| **5%** | 随机元素、随机款式的**无主外置魔力器官** |
-
-**箱子获得的无主器官不能认主。** 即使首次进入玩家背包，也不会自动认主；尝试用于武器绑定同样不能取得所有权。这与神像共鸣授予的有效器官不同。
-
-元素矿石会掉落对应元素之印；非岩元素矿石另有机会产出岩之印。元素史莱姆也可掉落对应元素之印。
-
-### 世界等级与成长
-
-世界等级 **0～9**，整个服务器共享。自然升级需要同时达到玩家累计记录的经验等级总和、以及全服最高七天神像供奉等级的门槛。世界等级控制神像供奉上限，并增强普通生物的生命值、攻击伤害与部分材料掉落：
-
-| 世界等级为 `W` 时 | 倍率 |
-| --- | --- |
-| 普通生物最大生命值 | `1 + 0.20 × W` |
-| 普通生物攻击伤害 | `1 + 0.10 × W` |
-| 符合规则的普通材料掉落 | `1 + 0.08 × W` |
-
-玩家和原版 Boss 不受普通生物的等级倍率影响。世界等级 0～9 使用连续的原版进度；放弃所有权的进度独立展示。
-
-命令：`/genshinecraft worldlevel` 查看当前等级；管理员可使用 `/genshinecraft worldlevel set <0-9>` 和 `/genshinecraft worldlevel refresh`。
-
-## 从源码构建
-
-项目使用 **Gradle Wrapper（9.7.1）**、**Stonecutter（0.9.7）** 和 **Architectury**。需在本机安装目标版本对应的 JDK（见上表），项目未开启 Gradle 自动下载 JDK。
-
-Windows 示例，构建全部六个目标：
+例如在 Windows 上构建 Minecraft 1.21.1 Fabric 版本：
 
 ```powershell
-.\gradlew.bat :fabric:1.20.1:build :forge:1.20.1:build :fabric:1.21.1:build :neoforge:1.21.1:build :fabric:26.3:build :neoforge:26.3:build
+.\gradlew.bat :fabric:1.21.1:build
 ```
 
-也可以只运行单个目标，例如 `.\gradlew.bat :fabric:1.21.1:build`。Linux/macOS 使用 `./gradlew`。有完整的本地依赖缓存时，可按需添加 `--offline`。
+其他目标将 `:fabric:1.21.1:build` 替换为上表中对应的 `:<加载器>:<版本>:build`（如 `:neoforge:26.3:build`）。构建产物位于 `<加载器>/versions/<版本>/build/libs/`，请选择用于游戏安装的生产版 JAR，而不是源码 JAR。
 
-生成产物位于 `<加载器>/versions/<Minecraft 版本>/build/libs/`，安装时使用对应加载器的生产版 JAR。
+### 许可与声明
 
-## 项目结构
+代码以 [MIT License](LICENSE) 开源。本项目是非官方同人作品，与 Mojang、Microsoft、miHoYo / HoYoverse 无官方关联。《Minecraft》和《原神》的相关商标属于各自权利人。
 
-- `src/main/java/dev/genshinecraft/`：公共战斗、器官、神像、世界等级与客户端实现。
-- `src/main/resources/`：语言、模型、纹理、进度、战利品与世界生成数据。
-- `fabric/`、`forge/`、`neoforge/`：加载器入口及构建配置。
-- `versions/`：Minecraft 1.20.1、1.21.1、26.3 版本配置及构建输出。
+---
 
-## 许可与声明
+## English
 
-源代码以 [MIT License](LICENSE) 授权。
+### About
 
-Genshinecraft 为非官方同人项目，与 Mojang、Microsoft、miHoYo / HoYoverse 无官方关联。各游戏名称及相关商标归其各自权利人所有。
+**Genshinecraft** is an unofficial Minecraft mod inspired by Genshin Impact's elemental system. Discover statues throughout the world, obtain your own external magic organs, infuse weapons with elemental power, and progress through elemental reactions, offerings, and world levels.
+
+**Development status: feature development is complete.** This repository currently provides source code; no installable GitHub Release has been published yet.
+
+### Features
+
+- **Seven elements and reactions** — Anemo, Geo, Electro, Dendro, Hydro, Pyro, and Cryo, with reactions such as Vaporize, Melt, Swirl, Bloom, Overloaded, and Frozen. Weather and environmental effects can also apply elements.
+- **Three types of external magic organs** — Visions, Moon Wheels, and Star Wedges. Bind an owned organ to a weapon to deal elemental damage. Moon Wheels and Star Wedges also enable special Lunar and Stellar reactions.
+- **Statues and offerings** — Discover Statues of the Seven and attempt resonance. Each statue offers just one attempt with an **80%** success chance. Offer elemental sigils to increase Elemental Mastery; Moon Statues have their own progression.
+- **New world content** — Seven elemental ores, seven hostile elemental slimes, statue structures, and extra sigil and organ loot in chests.
+- **World levels and combat feedback** — World level progression affects mob strength and some drops, while elemental aura icons, reaction effects, and damage numbers make combat more readable.
+
+### Supported versions
+
+| Minecraft | Fabric | Forge | NeoForge |
+| --- | :---: | :---: | :---: |
+| 1.20.1 | ✅ | ✅ | — |
+| 1.21.1 | ✅ | — | ✅ |
+| 26.3 | ✅ | — | ✅ |
+
+**Required dependencies:** **Architectury API** for all versions, plus **Fabric API** for Fabric. Install dependency versions matching your Minecraft version and mod loader.
+
+### Installation
+
+1. Install a supported Fabric, Forge, or NeoForge loader for your Minecraft version.
+2. Install the matching Architectury API, and Fabric API if you use Fabric.
+3. Place the Genshinecraft JAR built for your Minecraft version and loader in the instance's `mods` folder.
+
+**Getting the mod:** There is no packaged GitHub Release yet. Build a JAR from source as described below. A GitHub source ZIP is **not** an installable mod.
+
+### Getting started
+
+1. **Explore and resonate:** Find a Statue of the Seven and interact with it for a chance to receive an external magic organ of its element.
+2. **Bind a weapon:** Pick up your owned organ in the inventory and right-click a supported weapon to bind it. Keep the organ in your inventory for the weapon to retain its elemental power.
+3. **Fight and make offerings:** Trigger reactions with elemental attacks. Mine elemental ores, defeat elemental slimes, and explore chests for sigils to offer at statues.
+4. **Teleport to statues:** Hold a usable organ linked to a source statue and press **V** to return there. Hold a Moon Sigil and press **V** to reach the nearest registered Moon Statue in the current dimension. The key can be rebound in Controls.
+
+**Organ ownership:** Built-in chest loot tables have an additional **5%** chance to contain an **ownerless** organ with a random element and appearance. **Chest-found organs cannot be claimed**, even when first picked up. To voluntarily abandon an owned organ, place it in a grindstone and take the result: ownership is permanently relinquished, your health is set to **1 HP**, and the separate advancement **“Embrace Lies, Accept Reality”** is awarded. Ownerless organs display a red ownership label.
+
+### Building from source
+
+This project uses Gradle Wrapper, Stonecutter, and Architectury. Use the JDK required by your build target: **Java 17 for 1.20.1, Java 21 for 1.21.1, and Java 25 for 26.3**.
+
+For example, build the Minecraft 1.21.1 Fabric version on Windows:
+
+```powershell
+.\gradlew.bat :fabric:1.21.1:build
+```
+
+For another target, replace `:fabric:1.21.1:build` with `:<loader>:<version>:build` (for example, `:neoforge:26.3:build`). Artifacts are generated in `<loader>/versions/<version>/build/libs/`. Use the production mod JAR, not a sources JAR.
+
+### License & disclaimer
+
+Source code is available under the [MIT License](LICENSE). This is an unofficial fan project and is not affiliated with Mojang, Microsoft, miHoYo, or HoYoverse. Minecraft and Genshin Impact trademarks belong to their respective owners.

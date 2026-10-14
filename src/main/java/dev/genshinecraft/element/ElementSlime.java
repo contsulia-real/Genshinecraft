@@ -4,13 +4,13 @@ import dev.genshinecraft.combat.ElementalCombat;
 import dev.genshinecraft.item.CarrierData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.level.ServerLevelAccessor;
 //? if >=26.3 {
-/*import net.minecraft.world.entity.AgeableMob;
-import net.minecraft.world.entity.EntitySpawnReason;
+/*import net.minecraft.world.entity.EntitySpawnReason;
 *///?} else {
 import net.minecraft.world.entity.MobSpawnType;
 //?}
@@ -37,6 +37,7 @@ import net.minecraft.world.entity.monster.Slime;
 /** Seven registered, independently spawned Slime types with permanent inherent element. */
 public final class ElementSlime extends Slime {
     private final CarrierData.Element element;
+    private boolean suppressMediumSplit;
 
     public ElementSlime(EntityType<? extends Slime> type, Level level, CarrierData.Element element) {
         super(type, level);
@@ -45,6 +46,24 @@ public final class ElementSlime extends Slime {
 
     public CarrierData.Element element() {
         return element;
+    }
+
+    /** A dead medium slime never splits; large slimes still use vanilla splitting. */
+    @Override
+    public void remove(Entity.RemovalReason reason) {
+        suppressMediumSplit = getSize() == 2 && isDeadOrDying();
+        try {
+            super.remove(reason);
+        } finally {
+            suppressMediumSplit = false;
+        }
+    }
+
+    @Override
+    public int getSize() {
+        // Vanilla Slime.remove() splits any dead slime with size > 1.
+        // Mask the size only during removal, preserving real health, attack and XP.
+        return suppressMediumSplit ? 1 : super.getSize();
     }
 
     /** Evaluate the actual spawn site: a biome alone is insufficient for water, lava, or rock. */
@@ -87,27 +106,32 @@ public final class ElementSlime extends Slime {
         return false;
     }
 
-    // The natural spawn pack shares SpawnGroupData. With 3 members, the third
-    // is guaranteed to be medium (size 2); packs of 1 or 2 remain small.
+    // Packs contain 1-3 hostile slimes: medium (size 2), with a guaranteed
+    // large slime (size 4) as the third member of a full pack.
     //? if >=26.3 {
     /*@Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty,
                                         EntitySpawnReason reason, SpawnGroupData group) {
         SpawnGroupData result = super.finalizeSpawn(world, difficulty, reason, group);
-        if ((reason == EntitySpawnReason.NATURAL || reason == EntitySpawnReason.CHUNK_GENERATION)
-                && result instanceof AgeableMob.AgeableMobGroupData data) {
-            setSize(data.getGroupSize() == 3 ? 2 : 1, true);
+        if (reason != EntitySpawnReason.NATURAL && reason != EntitySpawnReason.CHUNK_GENERATION) {
+            setSize(Math.min(4, Math.max(2, getSize() * 2)), true);
+            return result;
         }
-        return result;
+        SlimePackData pack = result instanceof SlimePackData data ? data : new SlimePackData();
+        setSize(++pack.count == 3 ? 4 : 2, true);
+        return pack;
     }
     *///?} else if =1.20.1 {
     /*@Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty,
                                         MobSpawnType reason, SpawnGroupData group, CompoundTag tag) {
         SpawnGroupData result = super.finalizeSpawn(world, difficulty, reason, group, tag);
-        if (reason != MobSpawnType.NATURAL && reason != MobSpawnType.CHUNK_GENERATION) return result;
+        if (reason != MobSpawnType.NATURAL && reason != MobSpawnType.CHUNK_GENERATION) {
+            setSize(Math.min(4, Math.max(2, getSize() * 2)), true);
+            return result;
+        }
         SlimePackData pack = result instanceof SlimePackData data ? data : new SlimePackData();
-        setSize(++pack.count == 3 ? 2 : 1, true);
+        setSize(++pack.count == 3 ? 4 : 2, true);
         return pack;
     }
     *///?} else {
@@ -115,17 +139,18 @@ public final class ElementSlime extends Slime {
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty,
                                         MobSpawnType reason, SpawnGroupData group) {
         SpawnGroupData result = super.finalizeSpawn(world, difficulty, reason, group);
-        if (reason != MobSpawnType.NATURAL && reason != MobSpawnType.CHUNK_GENERATION) return result;
+        if (reason != MobSpawnType.NATURAL && reason != MobSpawnType.CHUNK_GENERATION) {
+            setSize(Math.min(4, Math.max(2, getSize() * 2)), true);
+            return result;
+        }
         SlimePackData pack = result instanceof SlimePackData data ? data : new SlimePackData();
-        setSize(++pack.count == 3 ? 2 : 1, true);
+        setSize(++pack.count == 3 ? 4 : 2, true);
         return pack;
     }
     //?}
-    //? if <26.3 {
     private static final class SlimePackData implements SpawnGroupData {
         private int count;
     }
-    //?}
 
     @Override
     public void tick() {
@@ -150,7 +175,7 @@ public final class ElementSlime extends Slime {
     }
     //?}
 
-    // A level-one elemental slime must still be able to deal elemental contact damage.
+    // Elemental slimes remain hostile and deal elemental contact damage.
     //? if >=26.3 {
     /*@Override
     protected boolean canDealDamage() { return true; }

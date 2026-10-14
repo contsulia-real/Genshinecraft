@@ -2,6 +2,8 @@ package dev.genshinecraft.mixin;
 
 import dev.genshinecraft.world.StatueOfferings;
 import dev.genshinecraft.world.WorldLevelMobs;
+import dev.genshinecraft.element.ElementSlime;
+import dev.genshinecraft.item.CarrierItems;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -33,11 +35,15 @@ public abstract class WorldLevelLootMixin {
         int worldLevel = StatueOfferings.get(params.getLevel()).worldLevel();
         if (worldLevel <= 0) return output;
         return stack -> {
-            if (!ordinary(stack)) {
+            // Sigils from elemental slimes should grow with their HP cost, but
+            // unrelated rare loot and chest sigils must remain unaffected.
+            boolean elementalSigil = victim instanceof ElementSlime slime
+                    && stack.is(CarrierItems.SIGILS.get(slime.element()).get());
+            if (!ordinary(stack) && !elementalSigil) {
                 output.accept(stack);
                 return;
             }
-            double bonus = stack.getCount() * (worldLevel * 0.08);
+            double bonus = stack.getCount() * (worldLevel * (elementalSigil ? 0.16 : 0.08));
             int extra = (int) bonus;
             if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < bonus - extra) extra++;
             int remaining = stack.getCount() + extra;

@@ -256,6 +256,18 @@ public final class ElementalCombat {
 
     public static void onMeleeHit(Player player, Entity target, DamageSource source) {
         spawnHitParticles(player, target, source, "normal_melee");
+        // Only directly wielding an owned Pyro organ ignites on a successful melee hit.
+        CarrierData organ = CarrierData.read(player.getMainHandItem());
+        if (organ != null && organ.usableBy(player.getUUID())
+                && organ.element() == CarrierData.Element.PYRO
+                && source.is(ATTACK_TYPES.get(CarrierData.Element.PYRO))
+                && target instanceof LivingEntity living && living.isAlive()) {
+            //? if =1.20.1 {
+            /*living.setSecondsOnFire(4);
+            *///?} else {
+            living.igniteForSeconds(4);
+            //?}
+        }
     }
 
     public static void onProjectileHit(Projectile projectile, Entity target, DamageSource source) {
