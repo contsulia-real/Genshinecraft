@@ -111,22 +111,19 @@ public final class AuraIconOverlay {
     //?}
         int mask = ((AuraIconHolder) client.player).genshinecraft$auraIcons();
         if (mask == 0) return;
-        int count = Integer.bitCount(mask);
-        boolean creative = client.player.getAbilities().instabuild;
-        int x;
+        // Health, armor and the creative hotbar all start at the same left HUD edge.
+        int x = graphics.guiWidth() / 2 - 91;
         int y;
-        if (creative) {
-            // Start above the hotbar's left edge, then move right for each aura.
-            x = graphics.guiWidth() / 2 - 91;
+        if (client.player.getAbilities().instabuild) {
             y = graphics.guiHeight() - 39;
         } else {
-            // Vanilla positions armor above the hearts, moving it up for extra heart rows.
+            // Vanilla hearts move up when additional heart rows are present.
             int rows = Math.max(1, (int) Math.ceil((Math.max(client.player.getMaxHealth(),
                     client.player.getHealth()) + Math.ceil(client.player.getAbsorptionAmount())) / 20.0));
             int rowHeight = Math.max(10 - (rows - 2), 3);
-            int armorY = graphics.guiHeight() - 49 - (rows - 1) * rowHeight;
-            x = graphics.guiWidth() / 2 - 91 + (80 - count * 11) / 2;
-            y = armorY - 12;
+            int heartsY = graphics.guiHeight() - 39 - (rows - 1) * rowHeight;
+            // With armor the icons sit above its row; with no armor directly above hearts.
+            y = heartsY - (client.player.getArmorValue() > 0 ? 22 : 12);
         }
         for (CarrierData.Element element : CarrierData.Element.values()) {
             if ((mask & (1 << element.ordinal())) == 0) continue;
