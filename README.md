@@ -27,7 +27,7 @@ A Minecraft mod featuring elemental combat, statues, and external magic organs.
 
 ### 下载与安装
 
-目前**没有发布预编译安装包**，可按下方指令从源码构建。
+**下载：** [GitHub Releases](https://github.com/contsulia-real/Genshinecraft/releases/latest)。请按 Minecraft 版本和加载器选择 JAR。
 
 1. 安装上表对应的 Minecraft 模组加载器。
 2. 安装 **Architectury API**；Fabric 版本还需要 **Fabric API**。
@@ -53,7 +53,7 @@ A Minecraft mod featuring elemental combat, statues, and external magic organs.
 
 ### Download & Installation
 
-**No prebuilt mod JARs have been published yet.** Build from source using the instructions below.
+**Download:** [GitHub Releases](https://github.com/contsulia-real/Genshinecraft/releases/latest). Choose the JAR matching your Minecraft version and loader.
 
 1. Install a supported Minecraft mod loader from the table above.
 2. Install **Architectury API**; Fabric also requires **Fabric API**.
