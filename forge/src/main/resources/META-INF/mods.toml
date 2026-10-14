@@ -1,11 +1,15 @@
 modLoader = "javafml"
 loaderVersion = "[47,)"
 license = "${mod_license}"
+issueTrackerURL = "https://github.com/contsulia-real/Genshinecraft/issues"
 
 [[mods]]
 modId = "${mod_id}"
 version = "${mod_version}"
 displayName = "${mod_name}"
+displayURL = "https://github.com/contsulia-real/Genshinecraft"
+logoFile = "genshinecraft-icon.png"
+logoBlur = false
 authors = "Contsulia"
 description = "${mod_description}"
 

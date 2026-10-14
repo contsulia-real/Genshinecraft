@@ -1,6 +1,7 @@
 modLoader = "javafml"
 loaderVersion = "[1,)"
 license = "${mod_license}"
+issueTrackerURL = "https://github.com/contsulia-real/Genshinecraft/issues"
 
 [[mixins]]
 config = "genshinecraft.mixins.json"
@@ -9,6 +10,9 @@ config = "genshinecraft.mixins.json"
 modId = "${mod_id}"
 version = "${mod_version}"
 displayName = "${mod_name}"
+displayURL = "https://github.com/contsulia-real/Genshinecraft"
+logoFile = "genshinecraft-icon.png"
+logoBlur = false
 authors = "Contsulia"
 description = "${mod_description}"
 

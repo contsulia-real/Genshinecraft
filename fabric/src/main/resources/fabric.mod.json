@@ -4,10 +4,16 @@
   "version": "${mod_version}",
   "name": "${mod_name}",
   "description": "${mod_description}",
+  "icon": "genshinecraft-icon.png",
   "license": "${mod_license}",
   "authors": [
     "Contsulia"
   ],
+  "contact": {
+    "homepage": "https://github.com/contsulia-real/Genshinecraft",
+    "issues": "https://github.com/contsulia-real/Genshinecraft/issues",
+    "sources": "https://github.com/contsulia-real/Genshinecraft"
+  },
   "environment": "*",
   "entrypoints": {
     "main": [
